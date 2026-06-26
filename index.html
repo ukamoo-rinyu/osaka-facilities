@@ -664,7 +664,6 @@ function render(){
 
 function renderCard(f){
   const age=f.year?2026-f.year:null;
-  const ageTag=age===null?'':(age>=40?`<span class="tag told">築${age}年</span>`:`<span class="tag ty">築${age}年</span>`);
   const c=UC[f.use]||'#888';
   const b=UB[f.use]||'#eee';
   const chk=selected.has(f.id);
@@ -690,22 +689,25 @@ function renderCard(f){
       </div>
     </div>`;
   }
+  const bureau=extractBureau(f.manager);
   return `<div class="card${chk?' sel-active':''}" data-id="${f.id}" onclick="selF(${f.id})" style="--uc:${c}">
-    <div class="ch">
-      <div onclick="event.stopPropagation()" style="margin-right:6px;display:flex;align-items:center">${chkHtml}</div>
-      <div class="cn">${f.name}<span style="font-size:10px;font-weight:400;color:var(--muted);margin-left:6px">${extractBureau(f.manager)}</span></div><div class="ct" style="background:${b};color:${c}">${f.use}</div>
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:6px;margin-bottom:2px">
+      <div style="display:flex;align-items:flex-start;gap:6px;flex:1;min-width:0">
+        <div onclick="event.stopPropagation()" style="display:flex;align-items:center;padding-top:1px;flex-shrink:0">${chkHtml}</div>
+        <div class="cn">${f.name}</div>
+      </div>
+      <span class="tag tw" style="flex-shrink:0">${f.ward}</span>
     </div>
-    <div class="ca"><span>📍</span>${f.addr}</div>
-    <div class="cs">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;margin-bottom:8px;padding-left:21px">
+      <div style="font-size:10px;color:var(--muted)">${bureau}</div>
+      <div class="ct" style="background:${b};color:${c};flex-shrink:0">${f.use}</div>
+    </div>
+    <div class="ca" style="margin-bottom:8px"><span>📍</span>${f.addr}</div>
+    <div class="cs" style="margin-bottom:${complexBadge||privateBadge||rentalBadge?'8px':'0'}">
       <div><div class="sv">${f.area>0?f.area.toLocaleString():'—'}</div><div class="su">延床面積（㎡）</div></div>
-      <div><div class="sv">${age!==null?`築${age}年`:'—'}</div><div class="su">${f.year?`（${f.year}年度築）`:''}</div></div>
+      <div><div class="sv">${age!==null?`築${age}年`:'—'}</div><div class="su">${f.year?`${f.year}年度築`:''}</div></div>
     </div>
-    <div class="ctags"><span class="tag tw">${f.ward}</span>${ageTag}${complexBadge}${privateBadge}${rentalBadge}</div>
-    <div class="cf">
-      <a class="cbtn bp" href="${BASE}${f.source}" target="_blank" rel="noopener">📄 PDF</a>
-      <a class="cbtn bm" href="https://maps.google.com/maps?q=${encodeURIComponent(f.addr)}" target="_blank" rel="noopener">🗺 地図</a>
-      ${karteUrl(f)?`<a class="cbtn" href="${karteUrl(f)}" target="_blank" rel="noopener" style="color:var(--purple);border-color:var(--purple)">📋 カルテ</a>`:''}
-    </div>
+    ${complexBadge||privateBadge||rentalBadge?`<div style="display:flex;gap:4px;flex-wrap:wrap">${complexBadge}${privateBadge}${rentalBadge}</div>`:''}
   </div>`;
 }
 
