@@ -382,15 +382,7 @@ function initMap(){
     .then(r=>{if(!r.ok)throw new Error('GeoJSON not found');return r.json();})
     .then(geojson=>{
       L.geoJSON(geojson, {
-        style:{color:'#2255cc',weight:3,opacity:0.6,fillOpacity:0},
-        onEachFeature:(feature, layer)=>{
-          if(feature.properties && feature.properties.name){
-            layer.bindTooltip(feature.properties.name, {
-              permanent:false, direction:'center',
-              className:'ward-label'
-            });
-          }
-        }
+        style:{color:'#2255cc',weight:3,opacity:0.6,fillOpacity:0}
       }).addTo(leafletMap);
     })
     .catch(()=>{}); // 取得失敗時は無視
