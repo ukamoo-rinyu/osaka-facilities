@@ -149,27 +149,7 @@ select:focus{border-color:var(--blue)}
       <div id="udsItems"></div>
     </div>
   </div>
-  <div class="fg">
-    <div class="fl">延床面積（㎡）</div>
-    <div class="rrow">
-      <input type="range" id="amin" min="0" max="130000" step="500" value="0">
-      <span class="rval" id="aminv">下限なし</span>
-      <span style="font-size:11px;color:var(--muted)">〜</span>
-      <input type="range" id="amax" min="0" max="130000" step="500" value="130000">
-      <span class="rval" id="amaxv">上限なし</span>
-    </div>
-  </div>
   <div class="fg"><div class="fl">所管局</div><select id="bs"><option value="">すべての局</option></select></div>
-  <div class="fg"><div class="fl">建築年度（以降）</div>
-    <select id="ys">
-      <option value="">指定なし</option>
-      <option value="1980">1980年以降</option>
-      <option value="1990">1990年以降</option>
-      <option value="2000">2000年以降</option>
-      <option value="2010">2010年以降</option>
-      <option value="2020">2020年以降</option>
-    </select>
-  </div>
   <div class="fg"><div class="fl">資産カルテ</div>
     <select id="ks">
       <option value="">すべて</option>
@@ -297,23 +277,29 @@ FACILITIES.forEach(f=>{
   addrCount[k]=(addrCount[k]||0)+1;
 });
 
-let state={q:'',ward:'',use:'',useDetails:new Set(),bureau:'',aMin:0,aMax:130000,year:'',karte:'',private:'',rental:'',sort:'name',view:'grid',sel:null};
+let state={q:'',ward:'',use:'',useDetails:new Set(),bureau:'',karte:'',private:'',rental:'',sort:'name',view:'grid',sel:null};
 const selected=new Set();
 
 function init(){
   const ws=document.getElementById('ws');
   const us=document.getElementById('us');
-  [...new Set(FACILITIES.map(f=>f.ward))].sort().forEach(w=>{
+  const WARD_ORDER=['東淀川区','旭区','淀川区','西淀川区','北区','鶴見区','城東区','都島区','福島区','此花区','中央区','西区','東成区','港区','浪速区','天王寺区','生野区','大正区','阿倍野区','西成区','東住吉区','平野区','住之江区','住吉区'];
+  const allWards=[...new Set(FACILITIES.map(f=>f.ward))];
+  [...WARD_ORDER.filter(w=>allWards.includes(w)),...allWards.filter(w=>!WARD_ORDER.includes(w)).sort()].forEach(w=>{
     const o=document.createElement('option');o.value=w;o.textContent=w;ws.appendChild(o);
   });
   [...new Set(FACILITIES.map(f=>f.use))].sort().forEach(u=>{
     const o=document.createElement('option');o.value=u;o.textContent=u;us.appendChild(o);
   });
-  // 用途詳細ドロップダウン初期化
-  buildUdsItems([...new Set(FACILITIES.map(f=>f.useDetail))].sort());
+  // 用途詳細ドロップダウン初期化（施設数の多い順）
+  const udCount={};FACILITIES.forEach(f=>{udCount[f.useDetail]=(udCount[f.useDetail]||0)+1;});
+  buildUdsItems([...new Set(FACILITIES.map(f=>f.useDetail))].sort((a,b)=>udCount[b]-udCount[a]));
   // 所管局セレクトの初期化
   const bs=document.getElementById('bs');
-  [...new Set(FACILITIES.map(f=>extractBureau(f.manager)))].sort((a,b)=>a.localeCompare(b,'ja')).forEach(b=>{
+  const allBureaus=new Set(FACILITIES.map(f=>extractBureau(f.manager)));
+  const WARD_BUREAUS=['東淀川区役所','旭区役所','淀川区役所','西淀川区役所','北区役所','鶴見区役所','城東区役所','都島区役所','福島区役所','此花区役所','中央区役所','西区役所','東成区役所','港区役所','浪速区役所','天王寺区役所','生野区役所','大正区役所','阿倍野区役所','西成区役所','東住吉区役所','平野区役所','住之江区役所','住吉区役所'];
+  const nonWardBureaus=[...allBureaus].filter(b=>!WARD_BUREAUS.includes(b)).sort((a,b)=>a.localeCompare(b,'ja'));
+  [...nonWardBureaus,...WARD_BUREAUS.filter(b=>allBureaus.has(b))].forEach(b=>{
     const o=document.createElement('option');o.value=b;o.textContent=b;bs.appendChild(o);
   });
   bs.addEventListener('change',e=>{state.bureau=e.target.value;render()});
@@ -322,29 +308,20 @@ function init(){
   us.addEventListener('change',e=>{
     state.use=e.target.value;
     state.useDetails=new Set();
-    const details=[...new Set(FACILITIES.filter(f=>!state.use||f.use===state.use).map(f=>f.useDetail))].sort();
+    const filtered0=FACILITIES.filter(f=>!state.use||f.use===state.use);
+    const udCnt={};filtered0.forEach(f=>{udCnt[f.useDetail]=(udCnt[f.useDetail]||0)+1;});
+    const details=[...new Set(filtered0.map(f=>f.useDetail))].sort((a,b)=>udCnt[b]-udCnt[a]);
     buildUdsItems(details);
     render();
   });
-  document.getElementById('ys').addEventListener('change',e=>{state.year=e.target.value;render()});
   document.getElementById('ks').addEventListener('change',e=>{state.karte=e.target.value;render()});
   document.getElementById('ps').addEventListener('change',e=>{state.private=e.target.value;render()});
   document.getElementById('rs').addEventListener('change',e=>{state.rental=e.target.value;render()});
-  document.getElementById('amin').addEventListener('input',e=>{
-    state.aMin=+e.target.value;
-    document.getElementById('aminv').textContent=state.aMin===0?'下限なし':state.aMin.toLocaleString()+'㎡〜';
-    render();
-  });
-  document.getElementById('amax').addEventListener('input',e=>{
-    state.aMax=+e.target.value;
-    document.getElementById('amaxv').textContent=state.aMax>=130000?'上限なし':'〜'+state.aMax.toLocaleString()+'㎡';
-    render();
-  });
   render();
 }
 
 function resetF(){
-  state={q:'',ward:'',use:'',useDetails:new Set(),bureau:'',aMin:0,aMax:130000,year:'',karte:'',private:'',rental:'',sort:state.sort,view:state.view,sel:null};
+  state={q:'',ward:'',use:'',useDetails:new Set(),bureau:'',karte:'',private:'',rental:'',sort:state.sort,view:state.view,sel:null};
   document.getElementById('ks').value='';
   document.getElementById('ps').value='';
   document.getElementById('rs').value='';
@@ -352,12 +329,8 @@ function resetF(){
   document.getElementById('ws').value='';
   document.getElementById('us').value='';
   document.getElementById('bs').value='';
-  buildUdsItems([...new Set(FACILITIES.map(f=>f.useDetail))].sort());
-  document.getElementById('ys').value='';
-  document.getElementById('amin').value=0;
-  document.getElementById('amax').value=130000;
-  document.getElementById('aminv').textContent='下限なし';
-  document.getElementById('amaxv').textContent='上限なし';
+  const udCount={};FACILITIES.forEach(f=>{udCount[f.useDetail]=(udCount[f.useDetail]||0)+1;});
+  buildUdsItems([...new Set(FACILITIES.map(f=>f.useDetail))].sort((a,b)=>udCount[b]-udCount[a]));
   render();
 }
 
@@ -408,7 +381,7 @@ function initMap(){
     .then(r=>{if(!r.ok)throw new Error('GeoJSON not found');return r.json();})
     .then(geojson=>{
       L.geoJSON(geojson, {
-        style:{color:'#2255cc',weight:1.5,opacity:0.5,fillOpacity:0},
+        style:{color:'#2255cc',weight:3,opacity:0.6,fillOpacity:0},
         onEachFeature:(feature, layer)=>{
           if(feature.properties && feature.properties.name){
             layer.bindTooltip(feature.properties.name, {
@@ -637,6 +610,8 @@ document.addEventListener('click',e=>{
 });
 
 function extractBureau(manager){
+  const ward=manager.match(/^([^\s　]+区役所)/);
+  if(ward) return ward[1];
   const m=manager.match(/([^\s　]+(?:局|室|委員会事務局|委員会))/);
   return m?m[1]:'その他';
 }
@@ -648,9 +623,6 @@ function getFiltered(){
     if(state.use&&f.use!==state.use)return false;
     if(state.useDetails.size>0&&!state.useDetails.has(f.useDetail))return false;
     if(state.bureau&&extractBureau(f.manager)!==state.bureau)return false;
-    if(f.area<state.aMin)return false;
-    if(state.aMax<130000&&f.area>state.aMax)return false;
-    if(state.year&&(f.year===null||f.year<+state.year))return false;
     if(state.karte==='1'&&!f.kartePage)return false;
     if(state.karte==='0'&&f.kartePage)return false;
     if(state.private==='1'&&!(f.privateFacilities||[]).filter(p=>p.name!==f.name).length)return false;
@@ -691,7 +663,7 @@ function render(){
 }
 
 function renderCard(f){
-  const age=f.year?2025-f.year:null;
+  const age=f.year?2026-f.year:null;
   const ageTag=age===null?'':(age>=40?`<span class="tag told">築${age}年</span>`:`<span class="tag ty">築${age}年</span>`);
   const c=UC[f.use]||'#888';
   const b=UB[f.use]||'#eee';
@@ -721,12 +693,12 @@ function renderCard(f){
   return `<div class="card${chk?' sel-active':''}" data-id="${f.id}" onclick="selF(${f.id})" style="--uc:${c}">
     <div class="ch">
       <div onclick="event.stopPropagation()" style="margin-right:6px;display:flex;align-items:center">${chkHtml}</div>
-      <div class="cn">${f.name}</div><div class="ct" style="background:${b};color:${c}">${f.use}</div>
+      <div class="cn">${f.name}<span style="font-size:10px;font-weight:400;color:var(--muted);margin-left:6px">${extractBureau(f.manager)}</span></div><div class="ct" style="background:${b};color:${c}">${f.use}</div>
     </div>
     <div class="ca"><span>📍</span>${f.addr}</div>
     <div class="cs">
       <div><div class="sv">${f.area>0?f.area.toLocaleString():'—'}</div><div class="su">延床面積（㎡）</div></div>
-      <div><div class="sv">${f.year||'—'}</div><div class="su">建築年度</div></div>
+      <div><div class="sv">${age!==null?`築${age}年`:'—'}</div><div class="su">${f.year?`（${f.year}年度築）`:''}</div></div>
     </div>
     <div class="ctags"><span class="tag tw">${f.ward}</span>${ageTag}${complexBadge}${privateBadge}${rentalBadge}</div>
     <div class="cf">
@@ -799,7 +771,7 @@ function openP(f){
   document.getElementById('dpt').textContent=f.useDetail;
   document.getElementById('dpn').textContent=f.name;
   document.getElementById('dpa').textContent='📍 '+f.addr;
-  const age=f.year?2025-f.year:null;
+  const age=f.year?2026-f.year:null;
   const bureau=extractBureau(f.manager);
   document.getElementById('dpg').innerHTML=`
     <div><div class="dpi-l">延床面積</div><div class="dpi-v">${f.area>0?f.area.toLocaleString():'—'}<span class="dpi-u"> ㎡</span></div></div>
