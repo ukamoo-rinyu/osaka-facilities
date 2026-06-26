@@ -208,6 +208,9 @@ select:focus{border-color:var(--blue)}
       <button class="dpc" onclick="closeP()">✕</button>
       <div class="dpt" id="dpt"></div>
       <div class="dpn" id="dpn"></div>
+      <div id="dpCityBadge" style="display:none;margin:4px 0 2px;padding:5px 10px;background:#e8f4e8;border-left:3px solid #2a7a2a;border-radius:0 5px 5px 0;font-size:11px;color:#1a5c1a;line-height:1.4">
+        市直営保育所として令和12年度末まで継続予定（全35か所のうちの1か所）
+      </div>
       <div class="dpa" id="dpa"></div>
     </div>
     <div class="dpb">
@@ -761,10 +764,13 @@ function selF(id){
 }
 function selAndSearch(id){selF(id);setTimeout(runAI,100)}
 
+const CITY_NURSERIES_35=new Set(['大淀保育所','御幸保育所','海老江保育所','高見町保育所','南大江保育所','梅本保育所','磯路保育所','大正保育所','味原保育所','浪速第1保育所','姫島保育所','加島第1保育所','三国保育所','日之出保育所','西大道保育所','東小橋保育所','生野保育所','中川保育所','生江保育所','大宮第1保育所','鯰江保育所','鴫野保育所','茨田第1保育所','阪南保育所','北加賀屋保育所','御崎保育所','住吉保育所','住吉乳児保育所','苅田南保育所','矢田教育の森保育所','鷹合保育所','加美第2保育所','長吉第1保育所','瓜破保育所','千本保育所','松之宮保育所']);
+
 function openP(f){
   const dp=document.getElementById('dp');dp.classList.add('open');
   document.getElementById('dpt').textContent=f.useDetail;
   document.getElementById('dpn').textContent=f.name;
+  document.getElementById('dpCityBadge').style.display=CITY_NURSERIES_35.has(f.name)?'':'none';
   document.getElementById('dpa').textContent='📍 '+f.addr;
   const age=f.year?2026-f.year:null;
   const bureau=extractBureau(f.manager);
