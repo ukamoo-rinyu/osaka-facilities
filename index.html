@@ -782,11 +782,14 @@ function openP(f){
     <div><div class="dpi-l">管理者詳細</div><div class="dpi-v" style="font-size:11px;line-height:1.4">${f.manager}</div></div>
   `;
   const a=encodeURIComponent(f.addr),n=encodeURIComponent(f.name);
+  const webUrl=f.url||`https://www.google.com/search?q=${n}+%E5%85%AC%E5%BC%8F%E3%82%B5%E3%82%A4%E3%83%88`;
+  const webLabel=f.url?'🌐 公式サイト':'🌐 公式サイトを検索';
   document.getElementById('dpls').innerHTML=`
     <a class="dpl bp" href="${BASE}${f.source}" target="_blank" rel="noopener">📄 一覧PDF</a>
     ${karteUrl(f)?`<a class="dpl" href="${karteUrl(f)}" target="_blank" rel="noopener" style="color:var(--purple);border-color:var(--purple)">📋 資産カルテ（${f.kartePage}ページ）</a>`:''}
+    <a class="dpl bm" href="${webUrl}" target="_blank" rel="noopener">${webLabel}</a>
     <a class="dpl bm" href="https://maps.google.com/maps?q=${a}" target="_blank" rel="noopener">🗺 Googleマップ</a>
-    <a class="dpl" style="color:var(--purple);border-color:var(--purple)" href="https://www.google.com/search?q=${n}+${a}" target="_blank" rel="noopener">🔎 Google検索</a>
+    <a class="dpl" style="color:var(--mid);border-color:var(--line)" href="https://www.google.com/search?q=${n}+${a}" target="_blank" rel="noopener">🔎 Google検索</a>
   `;
 
   // ── 民間複合施設（自施設・同一住所の市有施設と同名のものを除外） ──
