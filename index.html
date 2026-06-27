@@ -127,6 +127,36 @@ select:focus{border-color:var(--blue)}
 .sel-active{background:#fffbe6!important;border-color:#f0b429!important;}
 .sel-active::after{background:#f0b429!important;}
 
+/* ── お気に入りボタン ── */
+.fav-btn{background:none;border:none;cursor:pointer;font-size:15px;line-height:1;padding:2px;color:#ccc;transition:color .12s;flex-shrink:0}
+.fav-btn.active{color:#f0b429}
+.fav-btn:hover{color:#f0b429}
+
+/* ── 統計ダッシュボード ── */
+#dashPanel{position:fixed;top:52px;right:0;bottom:0;width:360px;background:#fff;border-left:1.5px solid var(--line);z-index:1500;overflow-y:auto;transform:translateX(100%);transition:transform .2s ease;box-shadow:-4px 0 20px rgba(0,0,0,.1)}
+#dashPanel.open{transform:translateX(0)}
+.dash-h{display:flex;align-items:center;justify-content:space-between;padding:14px 16px 10px;border-bottom:1px solid var(--line);position:sticky;top:0;background:#fff;z-index:10}
+.dash-title{font-size:14px;font-weight:800;color:var(--ink)}
+.dash-close{background:none;border:none;cursor:pointer;font-size:18px;color:var(--muted);padding:0;line-height:1}
+.dash-body{padding:14px 16px}
+.dash-kpi{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px}
+.dash-kpi-item{background:var(--bg);border-radius:8px;padding:8px 10px;text-align:center}
+.dash-kpi-v{font-size:18px;font-weight:800;color:var(--ink);line-height:1.2;font-variant-numeric:tabular-nums}
+.dash-kpi-l{font-size:10px;color:var(--muted);margin-top:3px}
+.dash-sec{margin-bottom:18px}
+.dash-sec-t{font-size:10px;font-weight:700;letter-spacing:.1em;color:var(--muted);text-transform:uppercase;margin-bottom:8px;padding-bottom:5px;border-bottom:1px solid var(--line)}
+.dash-bar-row{display:flex;align-items:center;gap:6px;margin-bottom:4px}
+.dash-bar-label{font-size:11px;color:var(--ink);min-width:80px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dash-bar-track{flex:1;height:8px;background:var(--line);border-radius:4px;overflow:hidden}
+.dash-bar-fill{height:100%;border-radius:4px;transition:width .3s}
+.dash-bar-val{font-size:10px;color:var(--mid);min-width:28px;text-align:right;font-variant-numeric:tabular-nums}
+
+/* ── 円内サマリー ── */
+#circleSummary{margin-top:8px;padding-top:8px;border-top:1px solid var(--line);font-size:11px;color:var(--mid);line-height:1.8}
+#circleSummary strong{color:var(--ink);font-weight:700}
+.cs-badges{display:flex;flex-wrap:wrap;gap:3px;margin-top:4px}
+.cs-badge{font-size:10px;padding:1px 5px;border-radius:3px;background:var(--tag-bg);color:var(--tag-fg);font-weight:600}
+
 .tab-bar{background:var(--white);border-bottom:2px solid var(--line);padding:0 20px;display:flex;gap:0}
 .tab-btn{padding:10px 22px;border:none;background:transparent;font-size:13px;font-weight:700;cursor:pointer;color:var(--muted);border-bottom:3px solid transparent;margin-bottom:-2px;font-family:inherit;transition:color .15s,border-color .15s;white-space:nowrap}
 .tab-btn.active{color:var(--orange);border-bottom-color:var(--orange)}
@@ -148,7 +178,22 @@ select:focus{border-color:var(--blue)}
 <body>
 <header>
   <div class="hlogo"><div class="hlogo-sq">大</div>大阪市 公共施設検索システム（1,606施設）</div>
+  <button id="favBadge" onclick="toggleFavOnly()" style="display:none;padding:4px 10px;border:1.5px solid #f0b429;border-radius:20px;background:transparent;color:#d4a000;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer">★ <span id="favBadgeCount">0</span>件</button>
+  <button onclick="openDash()" style="padding:5px 12px;border:1.5px solid #334;border-radius:7px;background:transparent;color:#8898cc;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;white-space:nowrap">📊 統計</button>
 </header>
+
+<div id="dashPanel">
+  <div class="dash-h">
+    <span class="dash-title">📊 統計ダッシュボード</span>
+    <button class="dash-close" onclick="closeDash()">✕</button>
+  </div>
+  <div class="dash-body">
+    <div class="dash-kpi" id="dashKpi"></div>
+    <div class="dash-sec"><div class="dash-sec-t">行政区別件数</div><div id="dashWardChart"></div></div>
+    <div class="dash-sec"><div class="dash-sec-t">用途大分類別件数</div><div id="dashUseChart"></div></div>
+    <div class="dash-sec"><div class="dash-sec-t">築年代別分布</div><div id="dashYearChart"></div></div>
+  </div>
+</div>
 
 <div id="stickyTop" style="position:sticky;top:52px;z-index:2000">
 <div class="tab-bar">
@@ -223,6 +268,12 @@ select:focus{border-color:var(--blue)}
       <option value="1">賃借施設</option>
     </select>
   </div>
+  <div class="fg"><div class="fl">お気に入り</div>
+    <label style="display:flex;align-items:center;gap:5px;cursor:pointer;padding:6px 0;font-size:13px;color:var(--ink)">
+      <input type="checkbox" id="favOnlyChk" onchange="onFavOnlyChange(this.checked)" style="accent-color:#f0b429;width:14px;height:14px;cursor:pointer">
+      ★ のみ表示
+    </label>
+  </div>
   <button class="freset" onclick="resetF()">✕ リセット</button>
   <div class="rbadge"><strong id="rn">0</strong> 件</div>
 </div>
@@ -258,6 +309,7 @@ select:focus{border-color:var(--blue)}
   <button class="sbtn" onclick="setSort(this,'ya')">古い順</button>
   <button class="sbtn" onclick="setSort(this,'bureau')">所管局</button>
   <div style="margin-left:auto;display:flex;align-items:center;gap:6px">
+    <button id="shareBtn" class="sbtn" onclick="copyShareUrl()" title="現在のフィルター状態をURLコピー">🔗 URLコピー</button>
     <button class="sbtn" onclick="selectAll()" title="表示中の全施設を選択">全選択</button>
     <button class="sbtn" onclick="clearSel()" title="選択をすべて解除">選択解除</button>
     <button id="csvBtn" onclick="exportCSV()" style="padding:4px 12px;border:none;border-radius:5px;background:var(--green);color:#fff;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;display:none;align-items:center;gap:4px">
@@ -299,6 +351,7 @@ select:focus{border-color:var(--blue)}
           <div id="circleCenterWardLabel" style="font-size:10px;color:var(--muted)"></div>
           <div style="font-size:10px;color:var(--muted);margin-top:2px">マーカーをドラッグして移動</div>
         </div>
+        <div id="circleSummary" style="display:none"></div>
       </div>
       <div style="position:absolute;top:10px;right:10px;z-index:1000;display:flex;gap:6px">
         <button onclick="toggleLabels()" id="labelToggleBtn" title="ラベル表示切替" style="background:#fff;border:1.5px solid var(--line);border-radius:7px;padding:6px 11px;font-size:12px;font-weight:700;cursor:pointer;box-shadow:0 1px 6px rgba(0,0,0,.12);font-family:inherit;color:var(--ink)">ラベル ON</button>
@@ -388,8 +441,9 @@ FACILITIES.forEach(f=>{
   addrCount[k]=(addrCount[k]||0)+1;
 });
 
-let state={q:'',wards:new Set(),uses:new Set(),useDetails:new Set(),bureaus:new Set(),karte:'',private:'',rental:'',sort:'name',view:'grid',sel:null};
+let state={q:'',wards:new Set(),uses:new Set(),useDetails:new Set(),bureaus:new Set(),karte:'',private:'',rental:'',sort:'name',view:'grid',sel:null,favOnly:false};
 const selected=new Set();
+const favorites=new Set(JSON.parse(localStorage.getItem('fav_osaka')||'[]'));
 
 function init(){
   const WARD_ORDER=['東淀川区','旭区','淀川区','西淀川区','北区','鶴見区','城東区','都島区','福島区','此花区','中央区','西区','東成区','港区','浪速区','天王寺区','生野区','大正区','阿倍野区','西成区','東住吉区','平野区','住之江区','住吉区'];
@@ -422,11 +476,12 @@ function init(){
 }
 
 function resetF(){
-  state={q:'',wards:new Set(),uses:new Set(),useDetails:new Set(),bureaus:new Set(),karte:'',private:'',rental:'',sort:state.sort,view:state.view,sel:null};
+  state={q:'',wards:new Set(),uses:new Set(),useDetails:new Set(),bureaus:new Set(),karte:'',private:'',rental:'',sort:state.sort,view:state.view,sel:null,favOnly:false};
   document.getElementById('ks').value='';
   document.getElementById('ps').value='';
   document.getElementById('rs').value='';
   document.getElementById('qi').value='';
+  document.getElementById('favOnlyChk').checked=false;
   updateWsBtn(); updateUsBtn(); updateBsBtn();
   const udCount={};FACILITIES.forEach(f=>{udCount[f.useDetail]=(udCount[f.useDetail]||0)+1;});
   buildUdsItems([...new Set(FACILITIES.map(f=>f.useDetail))].sort((a,b)=>udCount[b]-udCount[a]));
@@ -551,6 +606,7 @@ function toggleCircle(){
     document.getElementById('circleCenterWardLabel').textContent = '';
     document.getElementById('circlePanelBtn').style.display = 'block';
     document.getElementById('circlePanel').style.display = 'none';
+    const csum=document.getElementById('circleSummary');if(csum)csum.style.display='none';
     renderMap(getFiltered());
   } else {
     enableCircle();
@@ -584,8 +640,10 @@ function drawCircle(lat, lng, ward){
     circleLayer.setLatLng([la, ln]);
     updateCenterDisplay(la, ln);
     if(circleFilterActive) renderMap(getFiltered(), true);
+    updateCircleSummary();
   });
   updateCenterDisplay(lat, lng);
+  updateCircleSummary();
 }
 
 function onRadiusChange(val){
@@ -593,6 +651,7 @@ function onRadiusChange(val){
   document.getElementById('circleRadiusVal').textContent = val >= 1000 ? (val/1000).toFixed(1).replace(/\.0$/,'') + 'km' : val + 'm';
   if(circleLayer) circleLayer.setRadius(circleRadiusM);
   if(circleFilterActive) renderMap(getFiltered(), true);
+  updateCircleSummary();
 }
 
 function onCircleFilterChange(checked){
@@ -997,6 +1056,7 @@ function getFiltered(){
     if(state.private==='0'&&(f.privateFacilities||[]).filter(p=>p.name!==f.name).length>0)return false;
     if(state.rental==='1'&&!f.isRental)return false;
     if(state.rental==='0'&&f.isRental)return false;
+    if(state.favOnly&&!favorites.has(f.id))return false;
     return true;
   }).sort((a,b)=>{
     if(state.sort==='name')return a.name.localeCompare(b.name,'ja');
@@ -1028,6 +1088,7 @@ function render(){
     const el=cg.querySelector('[data-id="'+state.sel.id+'"]');
     if(el)el.classList.add('selected');
   }
+  if(dashOpen) updateDash(data);
 }
 
 function renderCard(f){
@@ -1036,6 +1097,8 @@ function renderCard(f){
   const b=UB[f.use]||'#eee';
   const chk=selected.has(f.id);
   const chkHtml=`<input type="checkbox" data-chk="${f.id}" ${chk?'checked':''} onclick="event.stopPropagation();toggleSel(${f.id},this.checked)" style="width:15px;height:15px;cursor:pointer;accent-color:var(--blue);flex-shrink:0">`;
+  const isFav=favorites.has(f.id);
+  const favHtml=`<button class="fav-btn${isFav?' active':''}" onclick="event.stopPropagation();toggleFav(${f.id},this)" title="お気に入り">${isFav?'★':'☆'}</button>`;
   const isComplex=addrCount[normAddr(f.addr)]>1;
   const privateFiltered0=(f.privateFacilities||[]).filter(p=>p.name!==f.name);
   const hasPrivate=privateFiltered0.length>0;
@@ -1053,6 +1116,7 @@ function renderCard(f){
           <div class="cls"><strong>${f.area>0?f.area.toLocaleString():'—'}</strong>㎡</div>
           <div class="cls"><strong>${f.year||'—'}</strong>年</div>
           <span class="tag tw" style="align-self:center">${f.ward}</span>
+          <div onclick="event.stopPropagation()">${favHtml}</div>
         </div>
       </div>
     </div>`;
@@ -1065,6 +1129,7 @@ function renderCard(f){
         <div class="cn">${f.name}</div>
       </div>
       <span class="tag tw" style="flex-shrink:0">${f.ward}</span>
+      <div onclick="event.stopPropagation()">${favHtml}</div>
     </div>
     <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;margin-bottom:8px;padding-left:21px">
       <div style="font-size:10px;color:var(--muted)">${bureau}</div>
@@ -1577,6 +1642,204 @@ function toggleMiryochi() {
     btn.style.borderColor = '';
   }
 }
+
+// ══════════════════════════════════════════
+// 1. URLコピー
+// ══════════════════════════════════════════
+function copyShareUrl(){
+  const p=new URLSearchParams();
+  if(state.q) p.set('q',state.q);
+  if(state.wards.size) p.set('wards',[...state.wards].join(','));
+  if(state.uses.size) p.set('uses',[...state.uses].join(','));
+  if(state.useDetails.size) p.set('uds',[...state.useDetails].join(','));
+  if(state.bureaus.size) p.set('bureaus',[...state.bureaus].join(','));
+  if(state.karte) p.set('karte',state.karte);
+  if(state.private) p.set('private',state.private);
+  if(state.rental) p.set('rental',state.rental);
+  if(state.sort!=='name') p.set('sort',state.sort);
+  if(state.favOnly) p.set('fav','1');
+  const url=location.href.split('?')[0]+(p.toString()?'?'+p.toString():'');
+  navigator.clipboard.writeText(url).then(()=>{
+    const btn=document.getElementById('shareBtn');
+    const orig=btn.textContent;
+    btn.textContent='✓ コピー済み';
+    btn.style.color='var(--green)';
+    btn.style.borderColor='var(--green)';
+    setTimeout(()=>{btn.textContent=orig;btn.style.color='';btn.style.borderColor='';},2000);
+  });
+}
+
+function loadStateFromUrl(){
+  const p=new URLSearchParams(location.search);
+  if(p.get('q')){state.q=p.get('q');document.getElementById('qi').value=state.q;}
+  if(p.get('wards')) p.get('wards').split(',').forEach(w=>state.wards.add(w));
+  if(p.get('uses')) p.get('uses').split(',').forEach(u=>state.uses.add(u));
+  if(p.get('uds')) p.get('uds').split(',').forEach(d=>state.useDetails.add(d));
+  if(p.get('bureaus')) p.get('bureaus').split(',').forEach(b=>state.bureaus.add(b));
+  if(p.get('karte')){state.karte=p.get('karte');document.getElementById('ks').value=state.karte;}
+  if(p.get('private')){state.private=p.get('private');document.getElementById('ps').value=state.private;}
+  if(p.get('rental')){state.rental=p.get('rental');document.getElementById('rs').value=state.rental;}
+  if(p.get('sort')){state.sort=p.get('sort');}
+  if(p.get('fav')==='1'){state.favOnly=true;document.getElementById('favOnlyChk').checked=true;}
+  if(state.wards.size||state.uses.size||state.useDetails.size||state.bureaus.size){
+    buildWsItems([...new Set(FACILITIES.map(f=>f.ward))].sort((a,b)=>a.localeCompare(b,'ja')));
+    const uCnt={};FACILITIES.forEach(f=>{uCnt[f.use]=(uCnt[f.use]||0)+1;});
+    buildUsItems([...new Set(FACILITIES.map(f=>f.use))].sort((a,b)=>uCnt[b]-uCnt[a]));
+    const udCnt={};FACILITIES.forEach(f=>{udCnt[f.useDetail]=(udCnt[f.useDetail]||0)+1;});
+    buildUdsItems([...new Set(FACILITIES.map(f=>f.useDetail))].sort((a,b)=>udCnt[b]-udCnt[a]));
+    const bureauList=[...new Set(FACILITIES.map(f=>extractBureau(f.manager)))].sort((a,b)=>a.localeCompare(b,'ja'));
+    buildBsItems(bureauList);
+  }
+  render();
+}
+
+// ══════════════════════════════════════════
+// 2. 統計ダッシュボード
+// ══════════════════════════════════════════
+let dashOpen=false;
+
+function openDash(){
+  dashOpen=true;
+  document.getElementById('dashPanel').classList.add('open');
+  updateDash(getFiltered());
+}
+
+function closeDash(){
+  dashOpen=false;
+  document.getElementById('dashPanel').classList.remove('open');
+}
+
+function updateDash(data){
+  if(!data) data=getFiltered();
+  // KPI
+  const total=data.length;
+  const areaSum=data.reduce((s,f)=>s+(f.area>0?f.area:0),0);
+  const withYear=data.filter(f=>f.year);
+  const avgAge=withYear.length?Math.round(withYear.reduce((s,f)=>s+(2026-f.year),0)/withYear.length):null;
+  document.getElementById('dashKpi').innerHTML=`
+    <div class="dash-kpi-item"><div class="dash-kpi-v">${total.toLocaleString()}</div><div class="dash-kpi-l">施設数</div></div>
+    <div class="dash-kpi-item"><div class="dash-kpi-v">${areaSum>0?(areaSum/10000).toFixed(1)+'万':'—'}</div><div class="dash-kpi-l">延床面積合計㎡</div></div>
+    <div class="dash-kpi-item"><div class="dash-kpi-v">${avgAge!==null?avgAge+'年':'—'}</div><div class="dash-kpi-l">平均築年数</div></div>
+  `;
+  // 行政区別グラフ
+  const wardCnt={};data.forEach(f=>{wardCnt[f.ward]=(wardCnt[f.ward]||0)+1;});
+  const wardEntries=Object.entries(wardCnt).sort((a,b)=>b[1]-a[1]);
+  const wardMax=wardEntries[0]?wardEntries[0][1]:1;
+  document.getElementById('dashWardChart').innerHTML=wardEntries.map(([w,n])=>`
+    <div class="dash-bar-row">
+      <div class="dash-bar-label" title="${w}">${w}</div>
+      <div class="dash-bar-track"><div class="dash-bar-fill" style="width:${Math.round(n/wardMax*100)}%;background:var(--blue)"></div></div>
+      <div class="dash-bar-val">${n}</div>
+    </div>`).join('');
+  // 用途大分類別グラフ
+  const useCnt={};data.forEach(f=>{useCnt[f.use]=(useCnt[f.use]||0)+1;});
+  const useEntries=Object.entries(useCnt).sort((a,b)=>b[1]-a[1]);
+  const useMax=useEntries[0]?useEntries[0][1]:1;
+  const useColors=['var(--blue)','var(--green)','var(--orange)','var(--purple)','var(--teal)','var(--red)'];
+  document.getElementById('dashUseChart').innerHTML=useEntries.map(([u,n],i)=>`
+    <div class="dash-bar-row">
+      <div class="dash-bar-label" title="${u}">${u}</div>
+      <div class="dash-bar-track"><div class="dash-bar-fill" style="width:${Math.round(n/useMax*100)}%;background:${useColors[i%useColors.length]}"></div></div>
+      <div class="dash-bar-val">${n}</div>
+    </div>`).join('');
+  // 築年代別分布（縦棒グラフをSVGで）
+  const decadeCnt={};
+  data.filter(f=>f.year).forEach(f=>{
+    const d=Math.floor(f.year/10)*10;
+    decadeCnt[d]=(decadeCnt[d]||0)+1;
+  });
+  const decades=Object.keys(decadeCnt).map(Number).sort((a,b)=>a-b);
+  if(decades.length){
+    const maxV=Math.max(...Object.values(decadeCnt));
+    const bw=24,gap=4,ph=80,pw=(bw+gap)*decades.length+gap;
+    const bars=decades.map((d,i)=>{
+      const v=decadeCnt[d];
+      const bh=Math.round(v/maxV*(ph-16));
+      const x=gap+i*(bw+gap);
+      const y=ph-bh-2;
+      return `<rect x="${x}" y="${y}" width="${bw}" height="${bh}" fill="var(--blue)" rx="2"/>
+        <text x="${x+bw/2}" y="${ph-1}" text-anchor="middle" font-size="8" fill="var(--muted)">${String(d).slice(2)}s</text>
+        <text x="${x+bw/2}" y="${y-2}" text-anchor="middle" font-size="8" fill="var(--ink)">${v}</text>`;
+    }).join('');
+    document.getElementById('dashYearChart').innerHTML=`<svg width="${pw}" height="${ph+4}" style="overflow:visible">${bars}</svg>`;
+  } else {
+    document.getElementById('dashYearChart').innerHTML='<div style="font-size:12px;color:var(--muted)">データなし</div>';
+  }
+}
+
+// ══════════════════════════════════════════
+// 3. お気に入り機能
+// ══════════════════════════════════════════
+function toggleFav(id, btn){
+  if(favorites.has(id)){
+    favorites.delete(id);
+    btn.textContent='☆';
+    btn.classList.remove('active');
+  } else {
+    favorites.add(id);
+    btn.textContent='★';
+    btn.classList.add('active');
+  }
+  localStorage.setItem('fav_osaka',JSON.stringify([...favorites]));
+  updateFavBadge();
+  if(state.favOnly) render();
+}
+
+function updateFavBadge(){
+  const n=favorites.size;
+  const badge=document.getElementById('favBadge');
+  badge.style.display=n>0?'inline-block':'none';
+  document.getElementById('favBadgeCount').textContent=n;
+}
+
+function onFavOnlyChange(checked){
+  state.favOnly=checked;
+  render();
+}
+
+function toggleFavOnly(){
+  state.favOnly=!state.favOnly;
+  document.getElementById('favOnlyChk').checked=state.favOnly;
+  render();
+}
+
+// ══════════════════════════════════════════
+// 4. 円内集計サマリー
+// ══════════════════════════════════════════
+function haversineDist(lat1,lng1,lat2,lng2){
+  const R=6371000,dLat=(lat2-lat1)*Math.PI/180,dLng=(lng2-lng1)*Math.PI/180;
+  const a=Math.sin(dLat/2)**2+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)**2;
+  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+
+function updateCircleSummary(){
+  const el=document.getElementById('circleSummary');
+  if(!el) return;
+  if(!circleActive||circleLat===null){el.style.display='none';return;}
+  const inside=FACILITIES.filter(f=>f.lat&&f.lng&&haversineDist(circleLat,circleLng,f.lat,f.lng)<=circleRadiusM);
+  if(!inside.length){el.style.display='block';el.innerHTML='<div style="color:var(--muted)">円内に施設がありません</div>';return;}
+  const areaSum=inside.reduce((s,f)=>s+(f.area>0?f.area:0),0);
+  const withYear=inside.filter(f=>f.year);
+  const avgAge=withYear.length?Math.round(withYear.reduce((s,f)=>s+(2026-f.year),0)/withYear.length):null;
+  const maxF=inside.reduce((a,b)=>b.area>a.area?b:a,inside[0]);
+  const useCnt={};inside.forEach(f=>{useCnt[f.use]=(useCnt[f.use]||0)+1;});
+  const badges=Object.entries(useCnt).sort((a,b)=>b[1]-a[1]).map(([u,n])=>`<span class="cs-badge">${u} ×${n}</span>`).join('');
+  const radLabel=circleRadiusM>=1000?(circleRadiusM/1000).toFixed(1).replace(/\.0$/,'')+'km':circleRadiusM+'m';
+  el.style.display='block';
+  el.innerHTML=`
+    <div>半径 <strong>${radLabel}</strong> 以内：<strong>${inside.length}件</strong></div>
+    ${areaSum>0?`<div>延床面積合計：<strong>${areaSum.toLocaleString()}㎡</strong></div>`:''}
+    ${avgAge!==null?`<div>平均築年数：<strong>${avgAge}年</strong></div>`:''}
+    ${maxF.area>0?`<div>最大施設：<strong>${maxF.name}</strong>（${maxF.area.toLocaleString()}㎡）</div>`:''}
+    <div class="cs-badges">${badges}</div>
+  `;
+}
+
+// ── 初期化フック ──
+document.addEventListener('DOMContentLoaded',()=>{
+  updateFavBadge();
+  loadStateFromUrl();
+});
 
 </script>
 </body>
