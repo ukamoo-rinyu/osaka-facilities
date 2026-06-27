@@ -1690,12 +1690,14 @@ function loadStateFromUrl(){
 function openDash(){
   dashOpen=true;
   document.getElementById('dashPanel').classList.add('open');
+  document.querySelector('.cards-area').style.marginRight='360px';
   updateDash(getFiltered());
 }
 
 function closeDash(){
   dashOpen=false;
   document.getElementById('dashPanel').classList.remove('open');
+  document.querySelector('.cards-area').style.marginRight='';
 }
 
 function updateDash(data){
