@@ -1690,14 +1690,16 @@ function loadStateFromUrl(){
 function openDash(){
   dashOpen=true;
   document.getElementById('dashPanel').classList.add('open');
-  document.querySelector('.cards-area').style.marginRight='360px';
+  document.getElementById('stickyTop').style.marginRight='360px';
+  document.querySelector('.page-body').style.marginRight='360px';
   updateDash(getFiltered());
 }
 
 function closeDash(){
   dashOpen=false;
   document.getElementById('dashPanel').classList.remove('open');
-  document.querySelector('.cards-area').style.marginRight='';
+  document.getElementById('stickyTop').style.marginRight='';
+  document.querySelector('.page-body').style.marginRight='';
 }
 
 function updateDash(data){
