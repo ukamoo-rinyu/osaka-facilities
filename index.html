@@ -147,7 +147,17 @@ select:focus{border-color:var(--blue)}
       <div id="wsItems"></div>
     </div>
   </div>
-  <div class="fg"><div class="fl">用途区分（大分類）</div><select id="us"><option value="">すべての用途</option></select></div>
+  <div class="fg" style="position:relative" id="usWrap">
+    <div class="fl">用途区分（大分類）</div>
+    <div id="usBtnLabel" onclick="toggleUsMenu()" style="padding:6px 26px 6px 9px;border:1.5px solid var(--line);border-radius:7px;background:var(--bg) url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2210%22 height=%226%22%3E%3Cpath d=%22M0 0l5 6 5-6z%22 fill=%22%238890b0%22/%3E%3C/svg%3E') no-repeat right 8px center;cursor:pointer;font-size:13px;color:var(--ink);white-space:nowrap;min-width:150px;user-select:none">すべての用途</div>
+    <div id="usMenu" style="display:none;position:absolute;top:100%;left:0;z-index:300;background:#fff;border:1.5px solid var(--line);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.12);min-width:220px;max-height:280px;overflow-y:auto;padding:4px 0">
+      <div style="padding:6px 10px;border-bottom:1px solid var(--line);display:flex;gap:6px;position:sticky;top:0;background:#fff">
+        <button onclick="usSelectAll()" style="flex:1;padding:3px;border:1px solid var(--line);border-radius:4px;font-size:11px;cursor:pointer;background:#f5f5f5;font-family:inherit">全選択</button>
+        <button onclick="usSelectNone()" style="flex:1;padding:3px;border:1px solid var(--line);border-radius:4px;font-size:11px;cursor:pointer;background:#f5f5f5;font-family:inherit">全解除</button>
+      </div>
+      <div id="usItems"></div>
+    </div>
+  </div>
   <div class="fg" style="position:relative" id="udsWrap">
     <div class="fl">用途詳細</div>
     <div id="udsBtnLabel" onclick="toggleUdsMenu()" style="padding:6px 26px 6px 9px;border:1.5px solid var(--line);border-radius:7px;background:var(--bg) url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2210%22 height=%226%22%3E%3Cpath d=%22M0 0l5 6 5-6z%22 fill=%22%238890b0%22/%3E%3C/svg%3E') no-repeat right 8px center;cursor:pointer;font-size:13px;color:var(--ink);white-space:nowrap;min-width:160px;user-select:none">すべての詳細</div>
@@ -159,7 +169,17 @@ select:focus{border-color:var(--blue)}
       <div id="udsItems"></div>
     </div>
   </div>
-  <div class="fg"><div class="fl">所管局</div><select id="bs"><option value="">すべての局</option></select></div>
+  <div class="fg" style="position:relative" id="bsWrap">
+    <div class="fl">所管局</div>
+    <div id="bsBtnLabel" onclick="toggleBsMenu()" style="padding:6px 26px 6px 9px;border:1.5px solid var(--line);border-radius:7px;background:var(--bg) url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2210%22 height=%226%22%3E%3Cpath d=%22M0 0l5 6 5-6z%22 fill=%22%238890b0%22/%3E%3C/svg%3E') no-repeat right 8px center;cursor:pointer;font-size:13px;color:var(--ink);white-space:nowrap;min-width:130px;user-select:none">すべての局</div>
+    <div id="bsMenu" style="display:none;position:absolute;top:100%;left:0;z-index:300;background:#fff;border:1.5px solid var(--line);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.12);min-width:220px;max-height:280px;overflow-y:auto;padding:4px 0">
+      <div style="padding:6px 10px;border-bottom:1px solid var(--line);display:flex;gap:6px;position:sticky;top:0;background:#fff">
+        <button onclick="bsSelectAll()" style="flex:1;padding:3px;border:1px solid var(--line);border-radius:4px;font-size:11px;cursor:pointer;background:#f5f5f5;font-family:inherit">全選択</button>
+        <button onclick="bsSelectNone()" style="flex:1;padding:3px;border:1px solid var(--line);border-radius:4px;font-size:11px;cursor:pointer;background:#f5f5f5;font-family:inherit">全解除</button>
+      </div>
+      <div id="bsItems"></div>
+    </div>
+  </div>
   <div class="fg"><div class="fl">資産カルテ</div>
     <select id="ks">
       <option value="">すべて</option>
@@ -234,7 +254,10 @@ select:focus{border-color:var(--blue)}
           <div style="font-size:10px;color:var(--muted);margin-top:2px">マーカーをドラッグして移動</div>
         </div>
       </div>
-      <button onclick="openCirclePanel()" id="circlePanelBtn" title="範囲円を表示" style="position:absolute;top:10px;right:10px;z-index:1000;background:#fff;border:1.5px solid var(--line);border-radius:7px;padding:6px 11px;font-size:12px;font-weight:700;cursor:pointer;box-shadow:0 1px 6px rgba(0,0,0,.12);font-family:inherit;color:var(--ink)">⊙ 範囲円</button>
+      <div style="position:absolute;top:10px;right:10px;z-index:1000;display:flex;gap:6px">
+        <button onclick="toggleLabels()" id="labelToggleBtn" title="ラベル表示切替" style="background:#fff;border:1.5px solid var(--line);border-radius:7px;padding:6px 11px;font-size:12px;font-weight:700;cursor:pointer;box-shadow:0 1px 6px rgba(0,0,0,.12);font-family:inherit;color:var(--ink)">ラベル ON</button>
+        <button onclick="openCirclePanel()" id="circlePanelBtn" title="範囲円を表示" style="background:#fff;border:1.5px solid var(--line);border-radius:7px;padding:6px 11px;font-size:12px;font-weight:700;cursor:pointer;box-shadow:0 1px 6px rgba(0,0,0,.12);font-family:inherit;color:var(--ink)">⊙ 範囲円</button>
+      </div>
     </div>
     <div id="ce" class="empty hidden"><div class="ei">🔍</div><div class="et">該当する施設がありません</div><div style="font-size:12px">条件を変えて再検索してください</div></div>
   </div>
@@ -315,42 +338,32 @@ FACILITIES.forEach(f=>{
   addrCount[k]=(addrCount[k]||0)+1;
 });
 
-let state={q:'',wards:new Set(),use:'',useDetails:new Set(),bureau:'',karte:'',private:'',rental:'',sort:'name',view:'grid',sel:null};
+let state={q:'',wards:new Set(),uses:new Set(),useDetails:new Set(),bureaus:new Set(),karte:'',private:'',rental:'',sort:'name',view:'grid',sel:null};
 const selected=new Set();
 
 function init(){
-  const us=document.getElementById('us');
   const WARD_ORDER=['東淀川区','旭区','淀川区','西淀川区','北区','鶴見区','城東区','都島区','福島区','此花区','中央区','西区','東成区','港区','浪速区','天王寺区','生野区','大正区','阿倍野区','西成区','東住吉区','平野区','住之江区','住吉区'];
   const allWards=[...new Set(FACILITIES.map(f=>f.ward))];
   const wardList=[...WARD_ORDER.filter(w=>allWards.includes(w)),...allWards.filter(w=>!WARD_ORDER.includes(w)).sort()];
   buildWsItems(wardList);
-  document.addEventListener('click',e=>{
-    if(!document.getElementById('wsWrap').contains(e.target)) document.getElementById('wsMenu').style.display='none';
-  });
-  [...new Set(FACILITIES.map(f=>f.use))].sort().forEach(u=>{
-    const o=document.createElement('option');o.value=u;o.textContent=u;us.appendChild(o);
-  });
+  // 用途区分ドロップダウン初期化
+  const allUses=[...new Set(FACILITIES.map(f=>f.use))].sort();
+  buildUsItems(allUses);
   // 用途詳細ドロップダウン初期化（施設数の多い順）
   const udCount={};FACILITIES.forEach(f=>{udCount[f.useDetail]=(udCount[f.useDetail]||0)+1;});
   buildUdsItems([...new Set(FACILITIES.map(f=>f.useDetail))].sort((a,b)=>udCount[b]-udCount[a]));
-  // 所管局セレクトの初期化
-  const bs=document.getElementById('bs');
+  // 所管局ドロップダウン初期化
   const allBureaus=new Set(FACILITIES.map(f=>extractBureau(f.manager)));
   const WARD_BUREAUS=['東淀川区役所','旭区役所','淀川区役所','西淀川区役所','北区役所','鶴見区役所','城東区役所','都島区役所','福島区役所','此花区役所','中央区役所','西区役所','東成区役所','港区役所','浪速区役所','天王寺区役所','生野区役所','大正区役所','阿倍野区役所','西成区役所','東住吉区役所','平野区役所','住之江区役所','住吉区役所'];
   const nonWardBureaus=[...allBureaus].filter(b=>!WARD_BUREAUS.includes(b)).sort((a,b)=>a.localeCompare(b,'ja'));
-  [...nonWardBureaus,...WARD_BUREAUS.filter(b=>allBureaus.has(b))].forEach(b=>{
-    const o=document.createElement('option');o.value=b;o.textContent=b;bs.appendChild(o);
-  });
-  bs.addEventListener('change',e=>{state.bureau=e.target.value;render()});
+  const bureauList=[...nonWardBureaus,...WARD_BUREAUS.filter(b=>allBureaus.has(b))];
+  buildBsItems(bureauList);
   document.getElementById('qi').addEventListener('input',e=>{state.q=e.target.value;render()});
-  us.addEventListener('change',e=>{
-    state.use=e.target.value;
-    state.useDetails=new Set();
-    const filtered0=FACILITIES.filter(f=>!state.use||f.use===state.use);
-    const udCnt={};filtered0.forEach(f=>{udCnt[f.useDetail]=(udCnt[f.useDetail]||0)+1;});
-    const details=[...new Set(filtered0.map(f=>f.useDetail))].sort((a,b)=>udCnt[b]-udCnt[a]);
-    buildUdsItems(details);
-    render();
+  document.addEventListener('click',e=>{
+    if(!document.getElementById('wsWrap').contains(e.target)) document.getElementById('wsMenu').style.display='none';
+    if(!document.getElementById('usWrap').contains(e.target)) document.getElementById('usMenu').style.display='none';
+    if(!document.getElementById('bsWrap').contains(e.target)) document.getElementById('bsMenu').style.display='none';
+    if(!document.getElementById('udsWrap').contains(e.target)) document.getElementById('udsMenu').style.display='none';
   });
   document.getElementById('ks').addEventListener('change',e=>{state.karte=e.target.value;render()});
   document.getElementById('ps').addEventListener('change',e=>{state.private=e.target.value;render()});
@@ -359,14 +372,12 @@ function init(){
 }
 
 function resetF(){
-  state={q:'',wards:new Set(),use:'',useDetails:new Set(),bureau:'',karte:'',private:'',rental:'',sort:state.sort,view:state.view,sel:null};
+  state={q:'',wards:new Set(),uses:new Set(),useDetails:new Set(),bureaus:new Set(),karte:'',private:'',rental:'',sort:state.sort,view:state.view,sel:null};
   document.getElementById('ks').value='';
   document.getElementById('ps').value='';
   document.getElementById('rs').value='';
   document.getElementById('qi').value='';
-  document.getElementById('us').value='';
-  document.getElementById('bs').value='';
-  updateWsBtn();
+  updateWsBtn(); updateUsBtn(); updateBsBtn();
   const udCount={};FACILITIES.forEach(f=>{udCount[f.useDetail]=(udCount[f.useDetail]||0)+1;});
   buildUdsItems([...new Set(FACILITIES.map(f=>f.useDetail))].sort((a,b)=>udCount[b]-udCount[a]));
   render();
@@ -430,6 +441,15 @@ let circleLayer = null;
 let circleDragMarker = null;
 let circleActive = false;
 let circleRadiusM = 2000;
+let labelsForceOff = false;
+
+function toggleLabels(){
+  labelsForceOff = !labelsForceOff;
+  const btn = document.getElementById('labelToggleBtn');
+  btn.textContent = labelsForceOff ? 'ラベル OFF' : 'ラベル ON';
+  btn.style.color = labelsForceOff ? 'var(--muted)' : 'var(--ink)';
+  if(leafletMap) leafletMap._zoomLabelHandler && leafletMap._zoomLabelHandler();
+}
 let circleCenterWard = '';
 let circleFilterActive = false;
 let circleLat = null, circleLng = null;
@@ -510,7 +530,7 @@ function drawCircle(lat, lng, ward){
     circleLat=la; circleLng=ln;
     circleLayer.setLatLng([la, ln]);
     updateCenterDisplay(la, ln);
-    if(circleFilterActive) renderMap(getFiltered());
+    if(circleFilterActive) renderMap(getFiltered(), true);
   });
   updateCenterDisplay(lat, lng);
 }
@@ -519,12 +539,12 @@ function onRadiusChange(val){
   circleRadiusM = parseInt(val);
   document.getElementById('circleRadiusVal').textContent = val >= 1000 ? (val/1000).toFixed(1).replace(/\.0$/,'') + 'km' : val + 'm';
   if(circleLayer) circleLayer.setRadius(circleRadiusM);
-  if(circleFilterActive) renderMap(getFiltered());
+  if(circleFilterActive) renderMap(getFiltered(), true);
 }
 
 function onCircleFilterChange(checked){
   circleFilterActive = checked;
-  renderMap(getFiltered());
+  renderMap(getFiltered(), true);
 }
 
 function setCircleCenter(lat, lng, ward){
@@ -549,7 +569,7 @@ function updateCenterDisplay(lat, lng){
   document.getElementById('circleCenterWardLabel').textContent = circleCenterWard ? '区: ' + circleCenterWard : '';
 }
 
-function renderMap(data){
+function renderMap(data, skipFit=false){
   if(!leafletMap) return;
   markerLayer.clearLayers();
   let filtered = data;
@@ -640,20 +660,25 @@ function renderMap(data){
     const f = group[0];
     const color = USE_COLOR_MAP[f.use] || '#888';
     const multi = group.length > 1;
-    const showLabel = leafletMap.getZoom() >= LABEL_ZOOM;
+    const showLabel = !labelsForceOff && leafletMap.getZoom() >= LABEL_ZOOM;
 
     function makeGroupIcon(show, ox, oy){
+      const isWardOffice = !multi && f.name.endsWith('区役所');
       const dot = multi
         ? `<div style="width:13px;height:13px;border-radius:50%;background:${color};border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;font-size:8px;color:#fff;font-weight:900">${group.length}</div>`
-        : `<div style="width:10px;height:10px;border-radius:50%;background:${color};border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4)"></div>`;
+        : isWardOffice
+          ? `<div style="width:18px;height:18px;border-radius:50%;background:${color};border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;line-height:1">★</div>`
+          : `<div style="width:10px;height:10px;border-radius:50%;background:${color};border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4)"></div>`;
+      const sz = isWardOffice ? [18,18] : [13,13];
+      const anc = isWardOffice ? [9,9] : [6,6];
       if(show){
-        const lx=ox||13, ly=oy||-3;
+        const lx=ox||(isWardOffice?20:13), ly=oy||-3;
         const label = multi ? `${f.name} 他${group.length-1}件` : f.name;
         return L.divIcon({className:'',
           html:`<div style="position:relative">${dot}<div style="position:absolute;left:${lx}px;top:${ly}px;white-space:nowrap;font-size:11px;font-weight:700;color:#121a2e;background:rgba(255,255,255,0.88);padding:1px 5px;border-radius:3px;box-shadow:0 1px 3px rgba(0,0,0,.2);pointer-events:none;font-family:'Hiragino Kaku Gothic ProN',sans-serif">${label}</div></div>`,
-          iconSize:[13,13], iconAnchor:[6,6]});
+          iconSize:sz, iconAnchor:anc});
       }
-      return L.divIcon({className:'', html:`<div style="position:relative">${dot}</div>`, iconSize:[13,13], iconAnchor:[6,6]});
+      return L.divIcon({className:'', html:`<div style="position:relative">${dot}</div>`, iconSize:sz, iconAnchor:anc});
     }
 
     const marker = L.marker([f.lat, f.lng], {icon: makeGroupIcon(showLabel)});
@@ -702,7 +727,7 @@ function renderMap(data){
     leafletMap.off('zoomend', leafletMap._zoomLabelHandler);
   }
   leafletMap._zoomLabelHandler = ()=>{
-    const show = leafletMap.getZoom() >= LABEL_ZOOM;
+    const show = !labelsForceOff && leafletMap.getZoom() >= LABEL_ZOOM;
     if(show){
       const pxPos = markers.map(m=>({m, ...leafletMap.latLngToContainerPoint(m.getLatLng())}));
       const candidates = [[13,-3],[-120,-3],[13,-18],[13,12],[-120,-18],[-120,12]];
@@ -722,15 +747,95 @@ function renderMap(data){
   };
   leafletMap.on('zoomend', leafletMap._zoomLabelHandler);
 
-  if(plotted.length>0){
+  if(!skipFit && plotted.length>0){
     const bounds = L.latLngBounds(plotted.filter(f=>f.lat&&f.lng).map(f=>[f.lat,f.lng]));
     leafletMap.fitBounds(bounds, {padding:[30,30], maxZoom:15});
   }
   setTimeout(()=>leafletMap.invalidateSize(), 100);
 }
 
+// ── 用途区分 カスタムドロップダウン ──
+function buildUsItems(uses){
+  const container=document.getElementById('usItems');
+  container.innerHTML=uses.map(u=>`
+    <label style="display:flex;align-items:center;gap:7px;padding:5px 12px;cursor:pointer;font-size:13px" onmouseover="this.style.background='#f5f7ff'" onmouseout="this.style.background=''">
+      <input type="checkbox" value="${u}" ${state.uses.has(u)?'checked':''} onchange="onUsChange(this)" style="accent-color:var(--blue);width:14px;height:14px;cursor:pointer">
+      <span>${u}</span>
+    </label>`).join('');
+  updateUsBtn();
+}
+function onUsChange(el){
+  if(el.checked) state.uses.add(el.value);
+  else state.uses.delete(el.value);
+  state.useDetails=new Set();
+  const filtered0=FACILITIES.filter(f=>state.uses.size===0||state.uses.has(f.use));
+  const udCnt={};filtered0.forEach(f=>{udCnt[f.useDetail]=(udCnt[f.useDetail]||0)+1;});
+  const details=[...new Set(filtered0.map(f=>f.useDetail))].sort((a,b)=>udCnt[b]-udCnt[a]);
+  buildUdsItems(details);
+  updateUsBtn();render();
+}
+function updateUsBtn(){
+  const el=document.getElementById('usBtnLabel');
+  if(!el)return;
+  if(state.uses.size===0) el.textContent='すべての用途';
+  else if(state.uses.size===1) el.textContent=[...state.uses][0];
+  else el.textContent=`${state.uses.size}種選択中`;
+  el.style.color=state.uses.size>0?'var(--blue)':'var(--ink)';
+}
+function toggleUsMenu(){
+  const m=document.getElementById('usMenu');
+  m.style.display=m.style.display==='none'?'block':'none';
+}
+function usSelectAll(){
+  document.querySelectorAll('#usItems input[type=checkbox]').forEach(cb=>{cb.checked=true;state.uses.add(cb.value);});
+  onUsChange({checked:true,value:''});
+}
+function usSelectNone(){
+  document.querySelectorAll('#usItems input[type=checkbox]').forEach(cb=>{cb.checked=false;state.uses.delete(cb.value);});
+  state.useDetails=new Set();
+  const udCount={};FACILITIES.forEach(f=>{udCount[f.useDetail]=(udCount[f.useDetail]||0)+1;});
+  buildUdsItems([...new Set(FACILITIES.map(f=>f.useDetail))].sort((a,b)=>udCount[b]-udCount[a]));
+  updateUsBtn();render();
+}
+
+// ── 所管局 カスタムドロップダウン ──
+function buildBsItems(bureaus){
+  const container=document.getElementById('bsItems');
+  container.innerHTML=bureaus.map(b=>`
+    <label style="display:flex;align-items:center;gap:7px;padding:5px 12px;cursor:pointer;font-size:13px" onmouseover="this.style.background='#f5f7ff'" onmouseout="this.style.background=''">
+      <input type="checkbox" value="${b}" ${state.bureaus.has(b)?'checked':''} onchange="onBsChange(this)" style="accent-color:var(--blue);width:14px;height:14px;cursor:pointer">
+      <span>${b}</span>
+    </label>`).join('');
+  updateBsBtn();
+}
+function onBsChange(el){
+  if(el.checked) state.bureaus.add(el.value);
+  else state.bureaus.delete(el.value);
+  updateBsBtn();render();
+}
+function updateBsBtn(){
+  const el=document.getElementById('bsBtnLabel');
+  if(!el)return;
+  if(state.bureaus.size===0) el.textContent='すべての局';
+  else if(state.bureaus.size===1) el.textContent=[...state.bureaus][0];
+  else el.textContent=`${state.bureaus.size}局選択中`;
+  el.style.color=state.bureaus.size>0?'var(--blue)':'var(--ink)';
+}
+function toggleBsMenu(){
+  const m=document.getElementById('bsMenu');
+  m.style.display=m.style.display==='none'?'block':'none';
+}
+function bsSelectAll(){
+  document.querySelectorAll('#bsItems input[type=checkbox]').forEach(cb=>{cb.checked=true;state.bureaus.add(cb.value);});
+  updateBsBtn();render();
+}
+function bsSelectNone(){
+  document.querySelectorAll('#bsItems input[type=checkbox]').forEach(cb=>{cb.checked=false;state.bureaus.delete(cb.value);});
+  updateBsBtn();render();
+}
+
 // 管理者文字列から局名を抽出（最初の「局」「室」「委員会」を含む単語）
-// ── 用途詳細 カスタムドロップダウン ──
+// ── 行政区 カスタムドロップダウン ──
 function buildWsItems(wards){
   const container=document.getElementById('wsItems');
   container.innerHTML=wards.map(w=>`
@@ -824,9 +929,9 @@ function getFiltered(){
   return FACILITIES.filter(f=>{
     if(state.q){const q=state.q;if(!f.name.includes(q)&&!f.addr.includes(q)&&!f.ward.includes(q)&&!f.useDetail.includes(q))return false;}
     if(state.wards.size>0&&!state.wards.has(f.ward))return false;
-    if(state.use&&f.use!==state.use)return false;
+    if(state.uses.size>0&&!state.uses.has(f.use))return false;
     if(state.useDetails.size>0&&!state.useDetails.has(f.useDetail))return false;
-    if(state.bureau&&extractBureau(f.manager)!==state.bureau)return false;
+    if(state.bureaus.size>0&&!state.bureaus.has(extractBureau(f.manager)))return false;
     if(state.karte==='1'&&!f.kartePage)return false;
     if(state.karte==='0'&&f.kartePage)return false;
     if(state.private==='1'&&!(f.privateFacilities||[]).filter(p=>p.name!==f.name).length)return false;
