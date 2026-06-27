@@ -151,11 +151,6 @@ select:focus{border-color:var(--blue)}
 .dash-bar-fill{height:100%;border-radius:4px;transition:width .3s}
 .dash-bar-val{font-size:10px;color:var(--mid);min-width:28px;text-align:right;font-variant-numeric:tabular-nums}
 
-/* ── 円内サマリー ── */
-#circleSummary{margin-top:8px;padding-top:8px;border-top:1px solid var(--line);font-size:11px;color:var(--mid);line-height:1.8}
-#circleSummary strong{color:var(--ink);font-weight:700}
-.cs-badges{display:flex;flex-wrap:wrap;gap:3px;margin-top:4px}
-.cs-badge{font-size:10px;padding:1px 5px;border-radius:3px;background:var(--tag-bg);color:var(--tag-fg);font-weight:600}
 
 .tab-bar{background:var(--white);border-bottom:2px solid var(--line);padding:0 20px;display:flex;gap:0}
 .tab-btn{padding:10px 22px;border:none;background:transparent;font-size:13px;font-weight:700;cursor:pointer;color:var(--muted);border-bottom:3px solid transparent;margin-bottom:-2px;font-family:inherit;transition:color .15s,border-color .15s;white-space:nowrap}
@@ -351,7 +346,6 @@ select:focus{border-color:var(--blue)}
           <div id="circleCenterWardLabel" style="font-size:10px;color:var(--muted)"></div>
           <div style="font-size:10px;color:var(--muted);margin-top:2px">マーカーをドラッグして移動</div>
         </div>
-        <div id="circleSummary" style="display:none"></div>
       </div>
       <div style="position:absolute;top:10px;right:10px;z-index:1000;display:flex;gap:6px">
         <button onclick="toggleLabels()" id="labelToggleBtn" title="ラベル表示切替" style="background:#fff;border:1.5px solid var(--line);border-radius:7px;padding:6px 11px;font-size:12px;font-weight:700;cursor:pointer;box-shadow:0 1px 6px rgba(0,0,0,.12);font-family:inherit;color:var(--ink)">ラベル ON</button>
@@ -444,6 +438,7 @@ FACILITIES.forEach(f=>{
 let state={q:'',wards:new Set(),uses:new Set(),useDetails:new Set(),bureaus:new Set(),karte:'',private:'',rental:'',sort:'name',view:'grid',sel:null,favOnly:false};
 const selected=new Set();
 const favorites=new Set(JSON.parse(localStorage.getItem('fav_osaka')||'[]'));
+let dashOpen=false;
 
 function init(){
   const WARD_ORDER=['東淀川区','旭区','淀川区','西淀川区','北区','鶴見区','城東区','都島区','福島区','此花区','中央区','西区','東成区','港区','浪速区','天王寺区','生野区','大正区','阿倍野区','西成区','東住吉区','平野区','住之江区','住吉区'];
@@ -606,7 +601,6 @@ function toggleCircle(){
     document.getElementById('circleCenterWardLabel').textContent = '';
     document.getElementById('circlePanelBtn').style.display = 'block';
     document.getElementById('circlePanel').style.display = 'none';
-    const csum=document.getElementById('circleSummary');if(csum)csum.style.display='none';
     renderMap(getFiltered());
   } else {
     enableCircle();
@@ -640,10 +634,8 @@ function drawCircle(lat, lng, ward){
     circleLayer.setLatLng([la, ln]);
     updateCenterDisplay(la, ln);
     if(circleFilterActive) renderMap(getFiltered(), true);
-    updateCircleSummary();
   });
   updateCenterDisplay(lat, lng);
-  updateCircleSummary();
 }
 
 function onRadiusChange(val){
@@ -651,7 +643,6 @@ function onRadiusChange(val){
   document.getElementById('circleRadiusVal').textContent = val >= 1000 ? (val/1000).toFixed(1).replace(/\.0$/,'') + 'km' : val + 'm';
   if(circleLayer) circleLayer.setRadius(circleRadiusM);
   if(circleFilterActive) renderMap(getFiltered(), true);
-  updateCircleSummary();
 }
 
 function onCircleFilterChange(checked){
@@ -1803,37 +1794,6 @@ function toggleFavOnly(){
   render();
 }
 
-// ══════════════════════════════════════════
-// 4. 円内集計サマリー
-// ══════════════════════════════════════════
-function haversineDist(lat1,lng1,lat2,lng2){
-  const R=6371000,dLat=(lat2-lat1)*Math.PI/180,dLng=(lng2-lng1)*Math.PI/180;
-  const a=Math.sin(dLat/2)**2+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)**2;
-  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
-}
-
-function updateCircleSummary(){
-  const el=document.getElementById('circleSummary');
-  if(!el) return;
-  if(!circleActive||circleLat===null){el.style.display='none';return;}
-  const inside=FACILITIES.filter(f=>f.lat&&f.lng&&haversineDist(circleLat,circleLng,f.lat,f.lng)<=circleRadiusM);
-  if(!inside.length){el.style.display='block';el.innerHTML='<div style="color:var(--muted)">円内に施設がありません</div>';return;}
-  const areaSum=inside.reduce((s,f)=>s+(f.area>0?f.area:0),0);
-  const withYear=inside.filter(f=>f.year);
-  const avgAge=withYear.length?Math.round(withYear.reduce((s,f)=>s+(2026-f.year),0)/withYear.length):null;
-  const maxF=inside.reduce((a,b)=>b.area>a.area?b:a,inside[0]);
-  const useCnt={};inside.forEach(f=>{useCnt[f.use]=(useCnt[f.use]||0)+1;});
-  const badges=Object.entries(useCnt).sort((a,b)=>b[1]-a[1]).map(([u,n])=>`<span class="cs-badge">${u} ×${n}</span>`).join('');
-  const radLabel=circleRadiusM>=1000?(circleRadiusM/1000).toFixed(1).replace(/\.0$/,'')+'km':circleRadiusM+'m';
-  el.style.display='block';
-  el.innerHTML=`
-    <div>半径 <strong>${radLabel}</strong> 以内：<strong>${inside.length}件</strong></div>
-    ${areaSum>0?`<div>延床面積合計：<strong>${areaSum.toLocaleString()}㎡</strong></div>`:''}
-    ${avgAge!==null?`<div>平均築年数：<strong>${avgAge}年</strong></div>`:''}
-    ${maxF.area>0?`<div>最大施設：<strong>${maxF.name}</strong>（${maxF.area.toLocaleString()}㎡）</div>`:''}
-    <div class="cs-badges">${badges}</div>
-  `;
-}
 
 // ── 初期化フック ──
 document.addEventListener('DOMContentLoaded',()=>{
