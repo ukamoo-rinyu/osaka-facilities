@@ -1248,18 +1248,55 @@ function buildMiryochiPopup(m) {
   </div>`;
 }
 
+function buildMiryochiGroupPopup(group) {
+  return group.map((m, i) => {
+    const rental = m.rental || '－';
+    const linkBtn = m.link
+      ? `<a href="${m.link}" target="_blank" rel="noopener" style="display:inline-block;margin-top:4px;padding:3px 8px;background:#1a6fb5;color:#fff;border-radius:4px;text-decoration:none;font-size:11px">🗺 まっぷなびおおさか</a>`
+      : '';
+    const sep = i < group.length - 1 ? '<hr style="border:none;border-top:1px solid #ddd;margin:10px 0">' : '';
+    return `<div>
+      <b style="font-size:13px">${m.name}</b>
+      <table style="width:100%;border-collapse:collapse;margin-top:4px;font-size:12px">
+        <tr><td style="color:#888;white-space:nowrap;padding-right:8px">所管局</td><td>${m.bureau}</td></tr>
+        <tr><td style="color:#888;white-space:nowrap;padding-right:8px">面積</td><td>${m.area} ㎡</td></tr>
+        <tr><td style="color:#888;white-space:nowrap;padding-right:8px">現状</td><td>${m.status}</td></tr>
+        <tr><td style="color:#888;white-space:nowrap;padding-right:8px">活用方針</td><td>${m.policy}（${m.criteria}）</td></tr>
+        <tr><td style="color:#888;white-space:nowrap;padding-right:8px">貸付等</td><td>${rental}</td></tr>
+      </table>
+      ${linkBtn}
+    </div>${sep}`;
+  }).join('');
+}
+
 function renderMiryochi() {
   miryochiLayer.clearLayers();
+  // 同一座標でグループ化
+  const groups = new Map();
   MIRYOCHI.forEach(m => {
     if (!m.lat || !m.lng) return;
+    const key = `${m.lat.toFixed(5)},${m.lng.toFixed(5)}`;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(m);
+  });
+
+  groups.forEach(group => {
+    const { lat, lng } = group[0];
+    const isMulti = group.length > 1;
+    const iconHtml = isMulti
+      ? `<div style="width:14px;height:14px;background:#e67e22;border:2px solid #333;box-shadow:0 1px 3px rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;font-size:8px;color:#fff;font-weight:900">${group.length}</div>`
+      : '<div style="width:10px;height:10px;background:#e67e22;border:2px solid #333;box-shadow:0 1px 3px rgba(0,0,0,.4)"></div>';
     const icon = L.divIcon({
       className: '',
-      html: '<div style="width:10px;height:10px;background:#e67e22;border:2px solid #333;box-shadow:0 1px 3px rgba(0,0,0,.4)"></div>',
-      iconSize: [10, 10],
-      iconAnchor: [5, 5]
+      html: iconHtml,
+      iconSize: isMulti ? [14, 14] : [10, 10],
+      iconAnchor: isMulti ? [7, 7] : [5, 5]
     });
-    const marker = L.marker([m.lat, m.lng], { icon });
-    marker.bindPopup(buildMiryochiPopup(m), { maxWidth: 320 });
+    const marker = L.marker([lat, lng], { icon });
+    const popupContent = isMulti
+      ? `<div style="font-size:13px;line-height:1.6"><b style="font-size:13px;color:#e67e22">${group.length}件の未利用地</b>${'<hr style="border:none;border-top:1px solid #ddd;margin:8px 0">'}${buildMiryochiGroupPopup(group)}</div>`
+      : buildMiryochiPopup(group[0]);
+    marker.bindPopup(popupContent, { maxWidth: 340, maxHeight: 400 });
     miryochiLayer.addLayer(marker);
   });
 }
