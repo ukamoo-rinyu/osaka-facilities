@@ -569,20 +569,23 @@ function updateCenterDisplay(lat, lng){
   document.getElementById('circleCenterWardLabel').textContent = circleCenterWard ? '区: ' + circleCenterWard : '';
 }
 
+function applyCircleFilter(data){
+  if(!circleActive || !circleFilterActive || circleLat===null) return data;
+  return data.filter(f=>{
+    if(f.ward && circleCenterWard && f.ward===circleCenterWard) return true;
+    if(f.lat && f.lng){
+      const d=L.latLng(circleLat, circleLng).distanceTo(L.latLng(f.lat, f.lng));
+      if(d<=circleRadiusM) return true;
+    }
+    return false;
+  });
+}
+
 function renderMap(data, skipFit=false){
   if(!leafletMap) return;
   markerLayer.clearLayers();
-  let filtered = data;
-  if(circleActive && circleFilterActive && circleLat !== null){
-    filtered = data.filter(f=>{
-      if(f.ward && circleCenterWard && f.ward === circleCenterWard) return true;
-      if(f.lat && f.lng){
-        const d = L.latLng(circleLat, circleLng).distanceTo(L.latLng(f.lat, f.lng));
-        if(d <= circleRadiusM) return true;
-      }
-      return false;
-    });
-  }
+  const filtered = applyCircleFilter(data);
+  document.getElementById('rn').textContent = filtered.length.toLocaleString();
   const plotted = filtered.filter(f=>f.lat&&f.lng);
 
   // 同一座標をグループ化
@@ -1039,7 +1042,8 @@ function toggleSel(id,chk){
 }
 
 function selectAll(){
-  getFiltered().forEach(f=>selected.add(f.id));
+  const data = state.view==='map' ? applyCircleFilter(getFiltered()) : getFiltered();
+  data.forEach(f=>selected.add(f.id));
   render();updateSelUI();
 }
 
