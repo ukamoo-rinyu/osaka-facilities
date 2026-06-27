@@ -126,13 +126,34 @@ select:focus{border-color:var(--blue)}
 .hidden{display:none!important}
 .sel-active{background:#fffbe6!important;border-color:#f0b429!important;}
 .sel-active::after{background:#f0b429!important;}
+
+.tab-bar{background:var(--white);border-bottom:2px solid var(--line);padding:0 20px;display:flex;gap:0}
+.tab-btn{padding:10px 22px;border:none;background:transparent;font-size:13px;font-weight:700;cursor:pointer;color:var(--muted);border-bottom:3px solid transparent;margin-bottom:-2px;font-family:inherit;transition:color .15s,border-color .15s;white-space:nowrap}
+.tab-btn.active{color:var(--orange);border-bottom-color:var(--orange)}
+.tab-btn:hover:not(.active){color:var(--ink)}
+
+.mcard{background:var(--white);border:1.5px solid var(--line);border-radius:10px;padding:14px;cursor:pointer;transition:all .15s;position:relative;overflow:hidden}
+.mcard::after{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;border-radius:4px 0 0 4px;background:#e67e22}
+.mcard:hover{border-color:#e67e22;box-shadow:0 3px 14px rgba(230,126,34,.15);transform:translateY(-1px)}
+.mcard-name{font-size:13px;font-weight:700;color:var(--ink);line-height:1.35;margin-bottom:4px}
+.mcard-row{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:6px}
+.mcard-tag{font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px}
+.mcard-stats{display:flex;gap:12px;margin-bottom:8px}
+.mcard-stat-v{font-size:14px;font-weight:800;color:var(--ink);line-height:1;font-variant-numeric:tabular-nums}
+.mcard-stat-u{font-size:10px;color:var(--muted)}
+.mcard-link{display:inline-flex;align-items:center;gap:3px;padding:4px 9px;border-radius:5px;font-size:11px;font-weight:700;border:1.5px solid #1a6fb5;color:#1a6fb5;text-decoration:none;transition:all .12s}
+.mcard-link:hover{background:#1a6fb5;color:#fff}
 </style>
 </head>
 <body>
 <header>
   <div class="hlogo"><div class="hlogo-sq">大</div>大阪市 公共施設検索システム（1,606施設）</div>
-  <div class="hbadge">出典：大阪市市政改革室 / CC-BY4.0</div>
 </header>
+
+<div class="tab-bar">
+  <button class="tab-btn active" id="tabFacilities" onclick="switchTab('facilities')">🏛 施設</button>
+  <button class="tab-btn" id="tabMiryochi" onclick="switchTab('miryochi')">🟠 未利用地</button>
+</div>
 
 <div class="filter-bar">
   <div class="sw"><span class="si">🔍</span><input type="text" id="qi" placeholder="施設名・住所で検索"></div>
@@ -205,6 +226,28 @@ select:focus{border-color:var(--blue)}
   <div class="rbadge"><strong id="rn">0</strong> 件</div>
 </div>
 
+<div id="miryochiBar" style="display:none;background:var(--white);border-bottom:1px solid var(--line);padding:10px 20px;flex-wrap:wrap;gap:8px;align-items:flex-end">
+  <div class="fg"><div class="fl">名称で検索</div><div class="sw"><span class="si">🔍</span><input type="text" id="mq" placeholder="名称で検索" oninput="renderMiryochiCards()" style="width:160px"></div></div>
+  <div class="fg"><div class="fl">所在区</div><select id="mWard" onchange="renderMiryochiCards()" style="padding:6px 26px 6px 9px;border:1.5px solid var(--line);border-radius:7px;background:var(--bg) url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2210%22 height=%226%22%3E%3Cpath d=%22M0 0l5 6 5-6z%22 fill=%22%238890b0%22/%3E%3C/svg%3E') no-repeat right 8px center;appearance:none;cursor:pointer;color:var(--ink);min-width:120px;outline:none;font-family:inherit;font-size:13px"><option value="">すべての区</option></select></div>
+  <div class="fg"><div class="fl">所管局</div><select id="mBureau" onchange="renderMiryochiCards()" style="padding:6px 26px 6px 9px;border:1.5px solid var(--line);border-radius:7px;background:var(--bg) url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2210%22 height=%226%22%3E%3Cpath d=%22M0 0l5 6 5-6z%22 fill=%22%238890b0%22/%3E%3C/svg%3E') no-repeat right 8px center;appearance:none;cursor:pointer;color:var(--ink);min-width:140px;outline:none;font-family:inherit;font-size:13px"><option value="">すべての局</option></select></div>
+  <div class="fg"><div class="fl">活用方針</div><select id="mPolicy" onchange="renderMiryochiCards()" style="padding:6px 26px 6px 9px;border:1.5px solid var(--line);border-radius:7px;background:var(--bg) url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2210%22 height=%226%22%3E%3Cpath d=%22M0 0l5 6 5-6z%22 fill=%22%238890b0%22/%3E%3C/svg%3E') no-repeat right 8px center;appearance:none;cursor:pointer;color:var(--ink);min-width:130px;outline:none;font-family:inherit;font-size:13px"><option value="">すべての方針</option></select></div>
+  <div class="fg"><div class="fl">分類（基準）</div><select id="mCriteria" onchange="renderMiryochiCards()" style="padding:6px 26px 6px 9px;border:1.5px solid var(--line);border-radius:7px;background:var(--bg) url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2210%22 height=%226%22%3E%3Cpath d=%22M0 0l5 6 5-6z%22 fill=%22%238890b0%22/%3E%3C/svg%3E') no-repeat right 8px center;appearance:none;cursor:pointer;color:var(--ink);min-width:120px;outline:none;font-family:inherit;font-size:13px"><option value="">すべての分類</option></select></div>
+  <button class="freset" onclick="resetMiryochiF()">✕ リセット</button>
+  <div style="margin-left:auto;font-size:13px;color:var(--mid);align-self:center"><strong id="mrn" style="color:var(--ink);font-size:16px;font-weight:700">0</strong> 件</div>
+</div>
+<div id="miryochiSbar" style="display:none;padding:7px 20px;align-items:center;gap:6px;border-bottom:1px solid var(--line);background:var(--bg)">
+  <span class="sl">並び替え：</span>
+  <button class="sbtn active" id="msortName" onclick="setMSort(this,'name')">名称</button>
+  <button class="sbtn" id="msortAd" onclick="setMSort(this,'ad')">面積↓</button>
+  <button class="sbtn" id="msortAa" onclick="setMSort(this,'aa')">面積↑</button>
+  <button class="sbtn" id="msortBureau" onclick="setMSort(this,'bureau')">所管局</button>
+  <div style="margin-left:auto;display:flex;gap:6px;align-items:center">
+    <button class="sbtn" onclick="mSelectAll()">全選択</button>
+    <button class="sbtn" onclick="mClearSel()">選択解除</button>
+    <button id="mCsvBtn" onclick="exportMiryochiCSV()" style="display:none;padding:4px 12px;border:none;border-radius:5px;background:var(--green);color:#fff;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;align-items:center;gap:4px">⬇ CSV出力 <span id="mSelCount"></span></button>
+  </div>
+</div>
+
 <div class="sbar">
   <span class="sl">並び替え：</span>
   <button class="sbtn active" onclick="setSort(this,'name')">施設名</button>
@@ -261,6 +304,8 @@ select:focus{border-color:var(--blue)}
       </div>
     </div>
     <div id="ce" class="empty hidden"><div class="ei">🔍</div><div class="et">該当する施設がありません</div><div style="font-size:12px">条件を変えて再検索してください</div></div>
+    <div id="mcg" class="cards-grid hidden"></div>
+    <div id="mce" class="empty hidden"><div class="ei">🔍</div><div class="et">該当する未利用地がありません</div><div style="font-size:12px">条件を変えて再検索してください</div></div>
   </div>
   <aside class="dp" id="dp">
     <div class="dph">
@@ -1229,6 +1274,216 @@ HTML形式（h4で見出し、ulで箇条書き）で回答し、不明な情報
 }
 
 init();
+computeMiryochiWards();
+buildMiryochiDropdowns();
+
+// ── タブ切り替え ──
+let currentTab = 'facilities';
+let mSort = 'name';
+
+function computeMiryochiWards() {
+  const wardOffices = FACILITIES.filter(f => f.name && f.name.endsWith('区役所') && f.lat && f.lng);
+  MIRYOCHI.forEach(m => {
+    if (!m.lat || !m.lng) { m.ward = ''; return; }
+    let best = null, bestDist = Infinity;
+    wardOffices.forEach(wo => {
+      const d = (wo.lat - m.lat) ** 2 + (wo.lng - m.lng) ** 2;
+      if (d < bestDist) { bestDist = d; best = wo; }
+    });
+    m.ward = best ? best.ward : '';
+  });
+}
+
+function buildMiryochiDropdowns() {
+  const WARD_ORDER=['東淀川区','旭区','淀川区','西淀川区','北区','鶴見区','城東区','都島区','福島区','此花区','中央区','西区','東成区','港区','浪速区','天王寺区','生野区','大正区','阿倍野区','西成区','東住吉区','平野区','住之江区','住吉区'];
+  const allWards = new Set(MIRYOCHI.map(m=>m.ward).filter(Boolean));
+  const wards = [...WARD_ORDER.filter(w=>allWards.has(w)), ...[...allWards].filter(w=>!WARD_ORDER.includes(w)).sort()];
+  const bureaus = [...new Set(MIRYOCHI.map(m=>m.bureau).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'ja'));
+  const policies = [...new Set(MIRYOCHI.map(m=>m.policy).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'ja'));
+  const criterias = [...new Set(MIRYOCHI.map(m=>m.criteria).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'ja'));
+
+  document.getElementById('mWard').innerHTML = '<option value="">すべての区</option>' +
+    wards.map(v=>`<option value="${v}">${v}</option>`).join('');
+  document.getElementById('mBureau').innerHTML = '<option value="">すべての局</option>' +
+    bureaus.map(v=>`<option value="${v}">${v}</option>`).join('');
+  document.getElementById('mPolicy').innerHTML = '<option value="">すべての方針</option>' +
+    policies.map(v=>`<option value="${v}">${v}</option>`).join('');
+  document.getElementById('mCriteria').innerHTML = '<option value="">すべての分類</option>' +
+    criterias.map(v=>`<option value="${v}">${v}</option>`).join('');
+}
+
+function switchTab(tab) {
+  currentTab = tab;
+  document.getElementById('tabFacilities').classList.toggle('active', tab==='facilities');
+  document.getElementById('tabMiryochi').classList.toggle('active', tab==='miryochi');
+
+  const filterBar = document.querySelector('.filter-bar');
+  const sbar = document.querySelector('.sbar');
+  const miryochiBar = document.getElementById('miryochiBar');
+  const miryochiSbar = document.getElementById('miryochiSbar');
+  const cg = document.getElementById('cg');
+  const mapWrap = document.getElementById('mapWrap');
+  const ce = document.getElementById('ce');
+  const mcg = document.getElementById('mcg');
+  const mce = document.getElementById('mce');
+
+  if (tab === 'facilities') {
+    filterBar.style.display = '';
+    sbar.style.display = '';
+    miryochiBar.style.display = 'none';
+    miryochiSbar.style.display = 'none';
+    mcg.classList.add('hidden');
+    mce.classList.add('hidden');
+    cg.classList.remove('hidden');
+    render();
+  } else {
+    filterBar.style.display = 'none';
+    sbar.style.display = 'none';
+    miryochiBar.style.display = 'flex';
+    miryochiSbar.style.display = 'flex';
+    cg.classList.add('hidden');
+    mapWrap.classList.add('hidden');
+    ce.classList.add('hidden');
+    renderMiryochiCards();
+  }
+}
+
+function setMSort(btn, s) {
+  mSort = s;
+  document.querySelectorAll('#miryochiSbar .sbtn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderMiryochiCards();
+}
+
+function resetMiryochiF() {
+  document.getElementById('mq').value = '';
+  document.getElementById('mWard').value = '';
+  document.getElementById('mBureau').value = '';
+  document.getElementById('mPolicy').value = '';
+  document.getElementById('mCriteria').value = '';
+  renderMiryochiCards();
+}
+
+const mSelected = new Set();
+
+function updateMSelUI() {
+  const n = mSelected.size;
+  const btn = document.getElementById('mCsvBtn');
+  if (!btn) return;
+  btn.style.display = n > 0 ? 'inline-flex' : 'none';
+  document.getElementById('mSelCount').textContent = `(${n}件)`;
+}
+
+function toggleMSel(idx, chk) {
+  if (chk) mSelected.add(idx); else mSelected.delete(idx);
+  const card = document.querySelector(`.mcard[data-idx="${idx}"]`);
+  if (card) card.classList.toggle('sel-active', chk);
+  updateMSelUI();
+}
+
+function mSelectAll() {
+  getMiryochiFiltered().forEach((m, i) => {
+    const idx = MIRYOCHI.indexOf(m);
+    mSelected.add(idx);
+  });
+  renderMiryochiCards();
+  updateMSelUI();
+}
+
+function mClearSel() {
+  mSelected.clear();
+  renderMiryochiCards();
+  updateMSelUI();
+}
+
+function exportMiryochiCSV() {
+  if (mSelected.size === 0) return;
+  const rows = [...mSelected].map(i => MIRYOCHI[i]).filter(Boolean);
+  const header = ['名称','所在区','所管局','面積(㎡)','現状','活用方針','分類','貸付等','まっぷなびURL'];
+  const escape = v => { const s = String(v??''); return s.includes(',')||s.includes('"')||s.includes('\n') ? `"${s.replace(/"/g,'""')}"` : s; };
+  const csv = [header.join(','), ...rows.map(m => [
+    m.name, m.ward||'', m.bureau, m.area||'', m.status||'', m.policy||'', m.criteria||'', m.rental||'', m.link||''
+  ].map(escape).join(','))].join('\n');
+  const blob = new Blob(['﻿' + csv], {type: 'text/csv;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `大阪市未利用地_選択${rows.length}件.csv`;
+  a.click();
+}
+
+// ── 未利用地カード描画 ──
+const POLICY_COLOR = {
+  '売却予定地': '#c0392b',
+  '事業予定地': '#1a6fb5',
+  '継続保有地': '#1e8c5a',
+  '貸付等活用地': '#6b3fa0',
+  '検討中': '#d4670a'
+};
+
+function getMiryochiFiltered() {
+  const q = (document.getElementById('mq')||{value:''}).value.trim();
+  const ward = (document.getElementById('mWard')||{value:''}).value;
+  const bureau = (document.getElementById('mBureau')||{value:''}).value;
+  const policy = (document.getElementById('mPolicy')||{value:''}).value;
+  const criteria = (document.getElementById('mCriteria')||{value:''}).value;
+  return MIRYOCHI.filter(m => {
+    if (q && !m.name.includes(q)) return false;
+    if (ward && m.ward !== ward) return false;
+    if (bureau && m.bureau !== bureau) return false;
+    if (policy && m.policy !== policy) return false;
+    if (criteria && m.criteria !== criteria) return false;
+    return true;
+  }).sort((a,b) => {
+    if (mSort === 'ad') return (parseInt(b.area)||0) - (parseInt(a.area)||0);
+    if (mSort === 'aa') return (parseInt(a.area)||0) - (parseInt(b.area)||0);
+    if (mSort === 'bureau') return a.bureau.localeCompare(b.bureau,'ja') || a.name.localeCompare(b.name,'ja');
+    return a.name.localeCompare(b.name, 'ja');
+  });
+}
+
+function renderMiryochiCards() {
+  const data = getMiryochiFiltered();
+  const mcg = document.getElementById('mcg');
+  const mce = document.getElementById('mce');
+  document.getElementById('mrn').textContent = data.length.toLocaleString();
+  mcg.classList.toggle('hidden', data.length === 0);
+  mce.classList.toggle('hidden', data.length > 0);
+  mcg.innerHTML = data.map(m => renderMiryochiCard(m)).join('');
+  updateMSelUI();
+}
+
+function renderMiryochiCard(m) {
+  const idx = MIRYOCHI.indexOf(m);
+  const pc = POLICY_COLOR[m.policy] || '#888';
+  const rental = m.rental || '－';
+  const area = m.area ? parseInt(m.area).toLocaleString() : '—';
+  const chk = mSelected.has(idx);
+  const linkBtn = m.link
+    ? `<a href="${m.link}" target="_blank" rel="noopener" class="mcard-link">🗺 まっぷなびおおさか</a>`
+    : '';
+  const policyTag = `<span class="mcard-tag" style="background:${pc}22;color:${pc};border:1px solid ${pc}88">${m.policy}</span>`;
+  const statusTag = `<span class="mcard-tag" style="background:#f5f5f5;color:#555;border:1px solid #ddd">${m.status||'—'}</span>`;
+  const wardTag = m.ward ? `<span class="tag tw" style="flex-shrink:0">${m.ward}</span>` : '';
+  return `<div class="mcard${chk?' sel-active':''}" data-idx="${idx}">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:6px;margin-bottom:4px">
+      <div style="display:flex;align-items:flex-start;gap:6px;flex:1;min-width:0">
+        <input type="checkbox" ${chk?'checked':''} onclick="event.stopPropagation();toggleMSel(${idx},this.checked)" style="width:15px;height:15px;cursor:pointer;accent-color:var(--blue);flex-shrink:0;margin-top:1px">
+        <div class="mcard-name">${m.name}</div>
+      </div>
+      ${wardTag}
+    </div>
+    <div class="mcard-row" style="padding-left:21px">
+      <span style="font-size:11px;color:var(--muted)">${m.bureau}</span>
+      ${policyTag}${statusTag}
+    </div>
+    <div class="mcard-stats" style="padding-left:21px">
+      <div><div class="mcard-stat-v">${area}</div><div class="mcard-stat-u">面積（㎡）</div></div>
+      <div><div class="mcard-stat-v" style="font-size:12px">${m.criteria||'—'}</div><div class="mcard-stat-u">基準</div></div>
+      <div><div class="mcard-stat-v" style="font-size:12px">${rental}</div><div class="mcard-stat-u">貸付等</div></div>
+    </div>
+    ${linkBtn ? `<div style="padding-top:8px;border-top:1px solid var(--line);padding-left:21px">${linkBtn}</div>` : ''}
+  </div>`;
+}
 
 function buildMiryochiPopup(m) {
   const rental = m.rental || '－';
