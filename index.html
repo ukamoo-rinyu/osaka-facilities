@@ -136,7 +136,17 @@ select:focus{border-color:var(--blue)}
 
 <div class="filter-bar">
   <div class="sw"><span class="si">🔍</span><input type="text" id="qi" placeholder="施設名・住所で検索"></div>
-  <div class="fg"><div class="fl">行政区</div><select id="ws"><option value="">すべての区</option></select></div>
+  <div class="fg" style="position:relative" id="wsWrap">
+    <div class="fl">行政区</div>
+    <div id="wsBtnLabel" onclick="toggleWsMenu()" style="padding:6px 26px 6px 9px;border:1.5px solid var(--line);border-radius:7px;background:var(--bg) url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2210%22 height=%226%22%3E%3Cpath d=%22M0 0l5 6 5-6z%22 fill=%22%238890b0%22/%3E%3C/svg%3E') no-repeat right 8px center;cursor:pointer;font-size:13px;color:var(--ink);white-space:nowrap;min-width:130px;user-select:none">すべての区</div>
+    <div id="wsMenu" style="display:none;position:absolute;top:100%;left:0;z-index:300;background:#fff;border:1.5px solid var(--line);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.12);min-width:180px;max-height:280px;overflow-y:auto;padding:4px 0">
+      <div style="padding:6px 10px;border-bottom:1px solid var(--line);display:flex;gap:6px;position:sticky;top:0;background:#fff">
+        <button onclick="wsSelectAll()" style="flex:1;padding:3px;border:1px solid var(--line);border-radius:4px;font-size:11px;cursor:pointer;background:#f5f5f5;font-family:inherit">全選択</button>
+        <button onclick="wsSelectNone()" style="flex:1;padding:3px;border:1px solid var(--line);border-radius:4px;font-size:11px;cursor:pointer;background:#f5f5f5;font-family:inherit">全解除</button>
+      </div>
+      <div id="wsItems"></div>
+    </div>
+  </div>
   <div class="fg"><div class="fl">用途区分（大分類）</div><select id="us"><option value="">すべての用途</option></select></div>
   <div class="fg" style="position:relative" id="udsWrap">
     <div class="fl">用途詳細</div>
@@ -200,7 +210,32 @@ select:focus{border-color:var(--blue)}
 <div class="page-body">
   <div class="cards-area">
     <div id="cg" class="cards-grid"></div>
-    <div id="mapView" class="hidden" style="height:calc(100vh - 200px);min-height:500px;border-radius:10px;overflow:hidden;"></div>
+    <div id="mapWrap" class="hidden" style="position:relative;height:calc(100vh - 200px);min-height:500px;border-radius:10px;overflow:hidden;">
+      <div id="mapView" style="width:100%;height:100%;"></div>
+      <div id="circlePanel" style="position:absolute;top:10px;right:10px;z-index:1000;background:#fff;border:1.5px solid var(--line);border-radius:9px;padding:10px 14px;box-shadow:0 2px 12px rgba(0,0,0,.14);min-width:220px;display:none">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <span style="font-size:11px;font-weight:700;letter-spacing:.08em;color:var(--muted);text-transform:uppercase">範囲円</span>
+          <button onclick="toggleCircle()" id="circleToggleBtn" style="padding:3px 10px;border-radius:5px;border:1.5px solid var(--blue);background:var(--blue);color:#fff;font-size:11px;font-weight:700;font-family:inherit;cursor:pointer">ON</button>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+          <span style="font-size:11px;color:var(--muted);white-space:nowrap">半径</span>
+          <input type="range" id="circleRadius" min="100" max="5000" step="100" value="2000" oninput="onRadiusChange(this.value)" style="flex:1;accent-color:var(--blue)">
+          <span id="circleRadiusVal" style="font-size:12px;font-weight:700;color:var(--blue);min-width:48px;text-align:right">2km</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+          <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:11px;color:var(--mid)">
+            <input type="checkbox" id="circleFilterChk" onchange="onCircleFilterChange(this.checked)" style="accent-color:var(--blue);width:13px;height:13px;cursor:pointer">
+            円内・同区のみ表示
+          </label>
+        </div>
+        <div style="font-size:11px;color:var(--mid);line-height:1.7">
+          <div>中心: <span id="circleCenterLat" style="font-weight:700;color:var(--ink)">—</span>, <span id="circleCenterLng" style="font-weight:700;color:var(--ink)">—</span></div>
+          <div id="circleCenterWardLabel" style="font-size:10px;color:var(--muted)"></div>
+          <div style="font-size:10px;color:var(--muted);margin-top:2px">マーカーをドラッグして移動</div>
+        </div>
+      </div>
+      <button onclick="openCirclePanel()" id="circlePanelBtn" title="範囲円を表示" style="position:absolute;top:10px;right:10px;z-index:1000;background:#fff;border:1.5px solid var(--line);border-radius:7px;padding:6px 11px;font-size:12px;font-weight:700;cursor:pointer;box-shadow:0 1px 6px rgba(0,0,0,.12);font-family:inherit;color:var(--ink)">⊙ 範囲円</button>
+    </div>
     <div id="ce" class="empty hidden"><div class="ei">🔍</div><div class="et">該当する施設がありません</div><div style="font-size:12px">条件を変えて再検索してください</div></div>
   </div>
   <aside class="dp" id="dp">
@@ -280,16 +315,17 @@ FACILITIES.forEach(f=>{
   addrCount[k]=(addrCount[k]||0)+1;
 });
 
-let state={q:'',ward:'',use:'',useDetails:new Set(),bureau:'',karte:'',private:'',rental:'',sort:'name',view:'grid',sel:null};
+let state={q:'',wards:new Set(),use:'',useDetails:new Set(),bureau:'',karte:'',private:'',rental:'',sort:'name',view:'grid',sel:null};
 const selected=new Set();
 
 function init(){
-  const ws=document.getElementById('ws');
   const us=document.getElementById('us');
   const WARD_ORDER=['東淀川区','旭区','淀川区','西淀川区','北区','鶴見区','城東区','都島区','福島区','此花区','中央区','西区','東成区','港区','浪速区','天王寺区','生野区','大正区','阿倍野区','西成区','東住吉区','平野区','住之江区','住吉区'];
   const allWards=[...new Set(FACILITIES.map(f=>f.ward))];
-  [...WARD_ORDER.filter(w=>allWards.includes(w)),...allWards.filter(w=>!WARD_ORDER.includes(w)).sort()].forEach(w=>{
-    const o=document.createElement('option');o.value=w;o.textContent=w;ws.appendChild(o);
+  const wardList=[...WARD_ORDER.filter(w=>allWards.includes(w)),...allWards.filter(w=>!WARD_ORDER.includes(w)).sort()];
+  buildWsItems(wardList);
+  document.addEventListener('click',e=>{
+    if(!document.getElementById('wsWrap').contains(e.target)) document.getElementById('wsMenu').style.display='none';
   });
   [...new Set(FACILITIES.map(f=>f.use))].sort().forEach(u=>{
     const o=document.createElement('option');o.value=u;o.textContent=u;us.appendChild(o);
@@ -307,7 +343,6 @@ function init(){
   });
   bs.addEventListener('change',e=>{state.bureau=e.target.value;render()});
   document.getElementById('qi').addEventListener('input',e=>{state.q=e.target.value;render()});
-  ws.addEventListener('change',e=>{state.ward=e.target.value;render()});
   us.addEventListener('change',e=>{
     state.use=e.target.value;
     state.useDetails=new Set();
@@ -324,14 +359,14 @@ function init(){
 }
 
 function resetF(){
-  state={q:'',ward:'',use:'',useDetails:new Set(),bureau:'',karte:'',private:'',rental:'',sort:state.sort,view:state.view,sel:null};
+  state={q:'',wards:new Set(),use:'',useDetails:new Set(),bureau:'',karte:'',private:'',rental:'',sort:state.sort,view:state.view,sel:null};
   document.getElementById('ks').value='';
   document.getElementById('ps').value='';
   document.getElementById('rs').value='';
   document.getElementById('qi').value='';
-  document.getElementById('ws').value='';
   document.getElementById('us').value='';
   document.getElementById('bs').value='';
+  updateWsBtn();
   const udCount={};FACILITIES.forEach(f=>{udCount[f.useDetail]=(udCount[f.useDetail]||0)+1;});
   buildUdsItems([...new Set(FACILITIES.map(f=>f.useDetail))].sort((a,b)=>udCount[b]-udCount[a]));
   render();
@@ -361,7 +396,7 @@ function setView(btn, v){
   state.view=v;
   document.getElementById('cg').className = v==='grid'?'cards-grid':'cards-list';
   document.getElementById('cg').classList.toggle('hidden', v==='map');
-  document.getElementById('mapView').classList.toggle('hidden', v!=='map');
+  document.getElementById('mapWrap').classList.toggle('hidden', v!=='map');
   if(v==='map'){
     initMap();
     renderMap(getFiltered());
@@ -391,10 +426,144 @@ function initMap(){
     .catch(()=>{}); // 取得失敗時は無視
 }
 
+let circleLayer = null;
+let circleDragMarker = null;
+let circleActive = false;
+let circleRadiusM = 2000;
+let circleCenterWard = '';
+let circleFilterActive = false;
+let circleLat = null, circleLng = null;
+
+function openCirclePanel(){
+  document.getElementById('circlePanelBtn').style.display = 'none';
+  document.getElementById('circlePanel').style.display = 'block';
+  if(!circleActive) enableCircle();
+}
+
+function enableCircle(){
+  circleActive = true;
+  document.getElementById('circleToggleBtn').textContent = 'OFF';
+  document.getElementById('circleToggleBtn').style.background = 'var(--mid)';
+  document.getElementById('circleToggleBtn').style.borderColor = 'var(--mid)';
+  const center = leafletMap.getCenter();
+  const ward = nearestWardOffice(center.lat, center.lng);
+  circleCenterWard = ward ? ward.ward : '';
+  drawCircle(ward ? ward.lat : center.lat, ward ? ward.lng : center.lng);
+}
+
+function nearestWardOffice(lat, lng){
+  const candidates = FACILITIES.filter(f=>f.name.endsWith('区役所')&&f.lat&&f.lng);
+  if(!candidates.length) return null;
+  let best=null, bestDist=Infinity;
+  candidates.forEach(f=>{
+    const d=(f.lat-lat)**2+(f.lng-lng)**2;
+    if(d<bestDist){bestDist=d;best=f;}
+  });
+  return best;
+}
+
+function toggleCircle(){
+  if(circleActive){
+    circleActive = false;
+    document.getElementById('circleToggleBtn').textContent = 'ON';
+    document.getElementById('circleToggleBtn').style.background = 'var(--blue)';
+    document.getElementById('circleToggleBtn').style.borderColor = 'var(--blue)';
+    if(circleLayer){ circleLayer.remove(); circleLayer=null; }
+    if(circleDragMarker){ circleDragMarker.remove(); circleDragMarker=null; }
+    circleLat=null; circleLng=null; circleCenterWard='';
+    circleFilterActive=false;
+    document.getElementById('circleFilterChk').checked=false;
+    document.getElementById('circleCenterLat').textContent = '—';
+    document.getElementById('circleCenterLng').textContent = '—';
+    document.getElementById('circleCenterWardLabel').textContent = '';
+    document.getElementById('circlePanelBtn').style.display = 'block';
+    document.getElementById('circlePanel').style.display = 'none';
+    renderMap(getFiltered());
+  } else {
+    enableCircle();
+  }
+}
+
+function drawCircle(lat, lng, ward){
+  if(circleLayer){ circleLayer.remove(); }
+  if(circleDragMarker){ circleDragMarker.remove(); }
+  circleLat = lat; circleLng = lng;
+  if(ward !== undefined) circleCenterWard = ward || '';
+  circleLayer = L.circle([lat, lng], {
+    radius: circleRadiusM,
+    color: '#c0392b',
+    weight: 2,
+    opacity: 0.8,
+    fillColor: '#c0392b',
+    fillOpacity: 0.08
+  }).addTo(leafletMap);
+
+  const dragIcon = L.divIcon({
+    className: '',
+    html: `<div style="width:18px;height:18px;border-radius:50%;background:#c0392b;border:3px solid #fff;box-shadow:0 1px 6px rgba(0,0,0,.4);cursor:grab"></div>`,
+    iconSize: [18,18],
+    iconAnchor: [9,9]
+  });
+  circleDragMarker = L.marker([lat, lng], { icon: dragIcon, draggable: true, zIndexOffset: 500 }).addTo(leafletMap);
+  circleDragMarker.on('drag', e=>{
+    const {lat:la, lng:ln} = e.latlng;
+    circleLat=la; circleLng=ln;
+    circleLayer.setLatLng([la, ln]);
+    updateCenterDisplay(la, ln);
+    if(circleFilterActive) renderMap(getFiltered());
+  });
+  updateCenterDisplay(lat, lng);
+}
+
+function onRadiusChange(val){
+  circleRadiusM = parseInt(val);
+  document.getElementById('circleRadiusVal').textContent = val >= 1000 ? (val/1000).toFixed(1).replace(/\.0$/,'') + 'km' : val + 'm';
+  if(circleLayer) circleLayer.setRadius(circleRadiusM);
+  if(circleFilterActive) renderMap(getFiltered());
+}
+
+function onCircleFilterChange(checked){
+  circleFilterActive = checked;
+  renderMap(getFiltered());
+}
+
+function setCircleCenter(lat, lng, ward){
+  leafletMap.closePopup();
+  circleCenterWard = ward || '';
+  // 地図ビューが開いていて円パネルが表示されていない場合は開く
+  if(document.getElementById('circlePanel').style.display === 'none'){
+    document.getElementById('circlePanelBtn').style.display = 'none';
+    document.getElementById('circlePanel').style.display = 'block';
+  }
+  circleActive = true;
+  document.getElementById('circleToggleBtn').textContent = 'OFF';
+  document.getElementById('circleToggleBtn').style.background = 'var(--mid)';
+  document.getElementById('circleToggleBtn').style.borderColor = 'var(--mid)';
+  drawCircle(lat, lng);
+  if(circleFilterActive) renderMap(getFiltered());
+}
+
+function updateCenterDisplay(lat, lng){
+  document.getElementById('circleCenterLat').textContent = lat.toFixed(5);
+  document.getElementById('circleCenterLng').textContent = lng.toFixed(5);
+  document.getElementById('circleCenterWardLabel').textContent = circleCenterWard ? '区: ' + circleCenterWard : '';
+}
+
 function renderMap(data){
   if(!leafletMap) return;
   markerLayer.clearLayers();
-  const plotted = data.filter(f=>f.lat&&f.lng);
+  let filtered = data;
+  if(circleActive && circleFilterActive && circleLat !== null){
+    filtered = data.filter(f=>{
+      if(f.ward && circleCenterWard && f.ward === circleCenterWard) return true;
+      if(f.lat && f.lng){
+        const d = L.latLng(circleLat, circleLng).distanceTo(L.latLng(f.lat, f.lng));
+        if(d <= circleRadiusM) return true;
+      }
+      return false;
+    });
+  }
+  const plotted = filtered.filter(f=>f.lat&&f.lng);
 
   // 同一座標をグループ化
   const groups = new Map();
@@ -501,10 +670,11 @@ function renderMap(data){
             ${g.area>0?`<span style="font-size:11px;background:#f0f0f0;padding:2px 6px;border-radius:4px">${g.area.toLocaleString()}㎡</span>`:''}
             ${g.year?`<span style="font-size:11px;background:#f0f0f0;padding:2px 6px;border-radius:4px">${g.year}年築</span>`:''}
           </div>
-          <div style="display:flex;gap:4px">
+          <div style="display:flex;gap:4px;flex-wrap:wrap">
             <a href="${BASE}${g.source}" target="_blank" style="font-size:11px;color:#c0392b;font-weight:700;text-decoration:none;padding:3px 7px;border:1px solid #c0392b;border-radius:4px">📄PDF</a>
             ${karteUrl(g)?`<a href="${karteUrl(g)}" target="_blank" style="font-size:11px;color:#6b3fa0;font-weight:700;text-decoration:none;padding:3px 7px;border:1px solid #6b3fa0;border-radius:4px">📋カルテ</a>`:''}
             <button onclick="selF(${g.id})" style="font-size:11px;color:#1a6fb5;font-weight:700;padding:3px 7px;border:1px solid #1a6fb5;border-radius:4px;background:transparent;cursor:pointer">詳細</button>
+            <button onclick="setCircleCenter(${g.lat},${g.lng},'${g.ward}')" style="font-size:11px;color:#0f8080;font-weight:700;padding:3px 7px;border:1px solid #0f8080;border-radius:4px;background:transparent;cursor:pointer">⊙ ここを中心に</button>
           </div>
         </div>`;
       }
@@ -516,6 +686,9 @@ function renderMap(data){
       return `<div style="font-family:'Hiragino Kaku Gothic ProN',sans-serif;min-width:220px;max-height:300px;overflow-y:auto">
         <div style="font-size:11px;font-weight:700;color:#555;margin-bottom:6px;padding-bottom:4px;border-bottom:2px solid #ddd">📍 ${f.addr}（${group.length}施設）</div>
         ${items}
+        <div style="margin-top:6px;padding-top:6px;border-top:1px solid #eee">
+          <button onclick="setCircleCenter(${f.lat},${f.lng},'${f.ward}')" style="font-size:11px;color:#0f8080;font-weight:700;padding:3px 7px;border:1px solid #0f8080;border-radius:4px;background:transparent;cursor:pointer;width:100%">⊙ ここを中心に円を作成</button>
+        </div>
       </div>`;
     }
 
@@ -558,6 +731,41 @@ function renderMap(data){
 
 // 管理者文字列から局名を抽出（最初の「局」「室」「委員会」を含む単語）
 // ── 用途詳細 カスタムドロップダウン ──
+function buildWsItems(wards){
+  const container=document.getElementById('wsItems');
+  container.innerHTML=wards.map(w=>`
+    <label style="display:flex;align-items:center;gap:7px;padding:5px 12px;cursor:pointer;font-size:13px" onmouseover="this.style.background='#f5f7ff'" onmouseout="this.style.background=''">
+      <input type="checkbox" value="${w}" ${state.wards.has(w)?'checked':''} onchange="onWsChange(this)" style="accent-color:var(--blue);width:14px;height:14px;cursor:pointer">
+      <span>${w}</span>
+    </label>`).join('');
+  updateWsBtn();
+}
+function onWsChange(el){
+  if(el.checked) state.wards.add(el.value);
+  else state.wards.delete(el.value);
+  updateWsBtn();render();
+}
+function updateWsBtn(){
+  const el=document.getElementById('wsBtnLabel');
+  if(!el)return;
+  if(state.wards.size===0) el.textContent='すべての区';
+  else if(state.wards.size===1) el.textContent=[...state.wards][0];
+  else el.textContent=`${state.wards.size}区選択中`;
+  el.style.color=state.wards.size>0?'var(--blue)':'var(--ink)';
+}
+function toggleWsMenu(){
+  const m=document.getElementById('wsMenu');
+  m.style.display=m.style.display==='none'?'block':'none';
+}
+function wsSelectAll(){
+  document.querySelectorAll('#wsItems input[type=checkbox]').forEach(cb=>{cb.checked=true;state.wards.add(cb.value);});
+  updateWsBtn();render();
+}
+function wsSelectNone(){
+  document.querySelectorAll('#wsItems input[type=checkbox]').forEach(cb=>{cb.checked=false;state.wards.delete(cb.value);});
+  updateWsBtn();render();
+}
+
 function buildUdsItems(details){
   const container=document.getElementById('udsItems');
   container.innerHTML=details.map(d=>`
@@ -615,7 +823,7 @@ function extractBureau(manager){
 function getFiltered(){
   return FACILITIES.filter(f=>{
     if(state.q){const q=state.q;if(!f.name.includes(q)&&!f.addr.includes(q)&&!f.ward.includes(q)&&!f.useDetail.includes(q))return false;}
-    if(state.ward&&f.ward!==state.ward)return false;
+    if(state.wards.size>0&&!state.wards.has(f.ward))return false;
     if(state.use&&f.use!==state.use)return false;
     if(state.useDetails.size>0&&!state.useDetails.has(f.useDetail))return false;
     if(state.bureau&&extractBureau(f.manager)!==state.bureau)return false;
