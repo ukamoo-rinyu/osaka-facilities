@@ -168,6 +168,7 @@ select:focus{border-color:var(--blue)}
 .mcard-stat-u{font-size:10px;color:var(--muted)}
 .mcard-link{display:inline-flex;align-items:center;gap:3px;padding:4px 9px;border-radius:5px;font-size:11px;font-weight:700;border:1.5px solid #1a6fb5;color:#1a6fb5;text-decoration:none;transition:all .12s}
 .mcard-link:hover{background:#1a6fb5;color:#fff}
+#simcg{background:var(--white)}
 </style>
 </head>
 <body>
@@ -194,6 +195,7 @@ select:focus{border-color:var(--blue)}
 <div class="tab-bar">
   <button class="tab-btn active" id="tabFacilities" onclick="switchTab('facilities')">🏛 施設</button>
   <button class="tab-btn" id="tabMiryochi" onclick="switchTab('miryochi')">🟠 未利用地</button>
+  <button class="tab-btn" id="tabSimulator" onclick="switchTab('simulator')">🏗️ 複合化 <span style="font-size:9px;font-weight:700;padding:1px 5px;background:#e67e22;color:#fff;border-radius:4px;vertical-align:middle">β</span></button>
 </div>
 
 <div class="filter-bar">
@@ -295,6 +297,30 @@ select:focus{border-color:var(--blue)}
   </div>
 </div>
 
+<div id="simBar" style="display:none;background:var(--white);border-bottom:1px solid var(--line);padding:10px 20px;align-items:center;gap:12px;flex-wrap:wrap">
+  <div id="simStep1Controls" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+    <span style="font-size:13px;font-weight:700;color:var(--blue)">Step 1 — 核施設を選ぶ</span>
+    <div style="display:flex;align-items:center;gap:8px">
+      <span style="font-size:12px;color:var(--muted);white-space:nowrap">老朽化（築</span>
+      <input type="range" id="simYearSlider" min="20" max="70" value="45" oninput="onSimYearChange(this.value)" style="width:120px;accent-color:var(--blue)">
+      <span id="simYearLabel" style="font-size:12px;font-weight:700;color:var(--blue);white-space:nowrap">45年以上）</span>
+    </div>
+    <div class="fg">
+      <div class="fl">所在区</div>
+      <select id="simWardFilter" onchange="renderSimStep1()" style="padding:5px 24px 5px 8px;border:1.5px solid var(--line);border-radius:7px;background:var(--bg) url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2210%22 height=%226%22%3E%3Cpath d=%22M0 0l5 6 5-6z%22 fill=%22%238890b0%22/%3E%3C/svg%3E') no-repeat right 6px center;appearance:none;cursor:pointer;color:var(--ink);min-width:110px;outline:none;font-family:inherit;font-size:12px">
+        <option value="">すべての区</option>
+      </select>
+    </div>
+    <div style="font-size:13px;color:var(--mid)"><strong id="simBaseCount" style="color:var(--ink);font-size:16px">0</strong> 件</div>
+  </div>
+  <div id="simStep2Controls" style="display:none;align-items:center;gap:10px;flex-wrap:wrap">
+    <button onclick="simReset()" style="padding:5px 12px;border:1.5px solid var(--line);border-radius:7px;background:var(--bg);font-size:12px;cursor:pointer;font-family:inherit">← 核施設を変更</button>
+    <div style="font-size:13px">核施設: <strong id="simBaseName" style="color:#e53e3e"></strong></div>
+    <div style="font-size:13px;color:var(--mid)">候補: <strong id="simCandCount" style="color:var(--ink)">0</strong> 件（<span id="simCandSameWard" style="color:var(--blue);font-weight:700">0</span>件同区）</div>
+    <button id="simLabelBtn" onclick="toggleSimLabels()" style="padding:4px 10px;border:1.5px solid var(--line);border-radius:6px;background:var(--blue);color:#fff;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">ラベル ON</button>
+  </div>
+</div>
+
 <div class="sbar">
   <span class="sl">並び替え：</span>
   <button class="sbtn active" onclick="setSort(this,'name')">施設名</button>
@@ -355,6 +381,8 @@ select:focus{border-color:var(--blue)}
     <div id="ce" class="empty hidden"><div class="ei">🔍</div><div class="et">該当する施設がありません</div><div style="font-size:12px">条件を変えて再検索してください</div></div>
     <div id="mcg" class="cards-grid hidden"></div>
     <div id="mce" class="empty hidden"><div class="ei">🔍</div><div class="et">該当する未利用地がありません</div><div style="font-size:12px">条件を変えて再検索してください</div></div>
+    <div id="simcg" class="cards-grid hidden"></div>
+    <div id="simce" class="empty hidden"><div class="ei">🏗️</div><div class="et">条件に合う老朽施設がありません</div><div style="font-size:12px">築年数のスライダーを調整してください</div></div>
   </div>
   <aside class="dp" id="dp">
     <div class="dph">
@@ -1374,35 +1402,73 @@ function switchTab(tab) {
   currentTab = tab;
   document.getElementById('tabFacilities').classList.toggle('active', tab==='facilities');
   document.getElementById('tabMiryochi').classList.toggle('active', tab==='miryochi');
+  document.getElementById('tabSimulator').classList.toggle('active', tab==='simulator');
 
   const filterBar = document.querySelector('.filter-bar');
   const sbar = document.querySelector('.sbar');
   const miryochiBar = document.getElementById('miryochiBar');
   const miryochiSbar = document.getElementById('miryochiSbar');
+  const simBar = document.getElementById('simBar');
   const cg = document.getElementById('cg');
   const mapWrap = document.getElementById('mapWrap');
   const ce = document.getElementById('ce');
   const mcg = document.getElementById('mcg');
   const mce = document.getElementById('mce');
+  const simcg = document.getElementById('simcg');
+  const simce = document.getElementById('simce');
+  const ca = document.querySelector('.cards-area');
 
   if (tab === 'facilities') {
     filterBar.style.display = '';
     sbar.style.display = '';
     miryochiBar.style.display = 'none';
     miryochiSbar.style.display = 'none';
+    simBar.style.display = 'none';
     mcg.classList.add('hidden');
     mce.classList.add('hidden');
+    simcg.classList.add('hidden');
+    simce.classList.add('hidden');
+    ca.style.display=''; ca.style.gap=''; ca.style.padding=''; ca.style.alignItems='';
+    mapWrap.style.flex=''; mapWrap.style.height='';
+    simcg.style.cssText='';
+    if(simMarkerLayer) simMarkerLayer.clearLayers();
+    if(simCircleLayer){if(leafletMap)leafletMap.removeLayer(simCircleLayer);simCircleLayer=null;}
+    simCandMarkers={};
     cg.classList.remove('hidden');
     render();
-  } else {
+  } else if (tab === 'miryochi') {
     filterBar.style.display = 'none';
     sbar.style.display = 'none';
     miryochiBar.style.display = 'flex';
     miryochiSbar.style.display = 'flex';
+    simBar.style.display = 'none';
     cg.classList.add('hidden');
     mapWrap.classList.add('hidden');
     ce.classList.add('hidden');
+    simcg.classList.add('hidden');
+    simce.classList.add('hidden');
+    ca.style.display=''; ca.style.gap=''; ca.style.padding=''; ca.style.alignItems='';
+    mapWrap.style.flex=''; mapWrap.style.height='';
+    simcg.style.cssText='';
+    if(simMarkerLayer) simMarkerLayer.clearLayers();
+    if(simCircleLayer){if(leafletMap)leafletMap.removeLayer(simCircleLayer);simCircleLayer=null;}
+    simCandMarkers={};
+    mcg.classList.remove('hidden');
     renderMiryochiCards();
+  } else if (tab === 'simulator') {
+    filterBar.style.display = 'none';
+    sbar.style.display = 'none';
+    miryochiBar.style.display = 'none';
+    miryochiSbar.style.display = 'none';
+    simBar.style.display = 'flex';
+    cg.classList.add('hidden');
+    mapWrap.classList.add('hidden');
+    ce.classList.add('hidden');
+    mcg.classList.add('hidden');
+    mce.classList.add('hidden');
+    simcg.classList.remove('hidden');
+    if(simStep===2 && simBase) renderSimStep2();
+    else renderSimStep1();
   }
 }
 
@@ -1797,10 +1863,424 @@ function toggleFavOnly(){
 }
 
 
+// ══════════════════════════════════════════
+// 4. 複合化シミュレーター
+// ══════════════════════════════════════════
+const OSAKA_WARDS_LIST=['北区','都島区','福島区','此花区','中央区','西区','港区','大正区','天王寺区','浪速区','西淀川区','淀川区','東淀川区','東成区','生野区','旭区','城東区','鶴見区','阿倍野区','住之江区','住吉区','東住吉区','平野区','西成区'];
+
+let simStep=1, simBase=null, simSelected=new Set(), simYearAgo=45;
+let simFacilityReduceOff=new Set(), simLabelOn=true;
+let simMarkerLayer=null, simCircleLayer=null, simCandMarkers={};
+
+const SIM_AFFINITY_GROUPS=[
+  ['図書館'],
+  ['体育館','スポーツ施設'],
+  ['老人福祉センター','保健センター'],
+  ['庁舎','区役所','出張所'],
+  ['子ども・子育てプラザ'],
+];
+
+function initSimMap(){
+  initMap();
+  if(!simMarkerLayer) simMarkerLayer=L.layerGroup().addTo(leafletMap);
+}
+
+function haversineKm(lat1,lng1,lat2,lng2){
+  const R=6371,dLat=(lat2-lat1)*Math.PI/180,dLng=(lng2-lng1)*Math.PI/180;
+  const a=Math.sin(dLat/2)**2+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)**2;
+  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+
+function isExcludedOtherWard(name,baseWard){
+  if(name.startsWith(baseWard)) return false;
+  return OSAKA_WARDS_LIST.some(w=>name.startsWith(w));
+}
+
+function getAffinityScore(base,cand){
+  let s=0;
+  const age=cand.year?2026-cand.year:0;
+  if(age>=45) s+=2;
+  if(age>=50) s+=2;
+  if(cand.use===base.use) s+=1;
+  const bg=SIM_AFFINITY_GROUPS.find(g=>g.includes(base.useDetail));
+  const cg=SIM_AFFINITY_GROUPS.find(g=>g.includes(cand.useDetail));
+  if(bg&&cg&&bg===cg) s+=3;
+  if(cand.useDetail&&cand.useDetail.includes('子ども・子育てプラザ')) s+=3;
+  return s;
+}
+
+function getSimBaseFacilities(){
+  const cut=2026-simYearAgo;
+  const wardFilter=document.getElementById('simWardFilter')?.value||'';
+  return FACILITIES
+    .filter(f=>f.year&&f.year<=cut&&f.lat&&f.lng&&(!wardFilter||f.ward===wardFilter))
+    .sort((a,b)=>a.year-b.year);
+}
+
+function getSimCandidates(){
+  if(!simBase) return [];
+  return FACILITIES
+    .filter(f=>{
+      if(f.id===simBase.id||!f.lat||!f.lng) return false;
+      const sameWard=f.ward===simBase.ward;
+      const within2km=haversineKm(simBase.lat,simBase.lng,f.lat,f.lng)<=2.0;
+      if(!sameWard&&!within2km) return false;
+      return !isExcludedOtherWard(f.name,simBase.ward);
+    })
+    .map(f=>({...f,_score:getAffinityScore(simBase,f),_sameWard:f.ward===simBase.ward}))
+    .sort((a,b)=>{
+      if(a._sameWard!==b._sameWard) return a._sameWard?-1:1;
+      return b._score-a._score||(a.year||9999)-(b.year||9999);
+    });
+}
+
+function calcAdjustedArea(f){ return f.area>0?f.area*(simFacilityReduceOff.has(f.id)?1:0.95):0; }
+function toggleFacilityReduction(id,checked){ if(checked)simFacilityReduceOff.delete(id);else simFacilityReduceOff.add(id); renderSimSummary(); }
+function toggleSimLabels(){ simLabelOn=!simLabelOn; document.getElementById('simLabelBtn').style.background=simLabelOn?'var(--blue)':'var(--bg)'; document.getElementById('simLabelBtn').style.color=simLabelOn?'#fff':'var(--ink)'; updateSimMapColors(); }
+
+function onSimYearChange(v){
+  simYearAgo=parseInt(v);
+  document.getElementById('simYearLabel').textContent=v+'年以上）';
+  renderSimStep1();
+}
+
+function renderSimStep1(){
+  // 区フィルターの選択肢を初期化（初回のみ）
+  const wf=document.getElementById('simWardFilter');
+  if(wf&&wf.options.length<=1){
+    const wards=[...new Set(FACILITIES.filter(f=>f.year&&f.lat&&f.lng).map(f=>f.ward))].sort((a,b)=>a.localeCompare(b,'ja'));
+    wards.forEach(w=>{const o=document.createElement('option');o.value=w;o.textContent=w;wf.appendChild(o);});
+  }
+  const data=getSimBaseFacilities();
+  document.getElementById('simBaseCount').textContent=data.length;
+  const cg=document.getElementById('simcg'), ce=document.getElementById('simce');
+  if(!data.length){cg.classList.add('hidden');ce.classList.remove('hidden');return;}
+  ce.classList.add('hidden');
+  cg.classList.remove('hidden');
+  cg.className='cards-grid';
+  cg.style.cssText='';
+  cg.innerHTML=data.map(f=>{
+    const age=f.year?2026-f.year:null;
+    const ageStr=age?`築${age}年（${f.year}年建築）`:'建築年不明';
+    const areaStr=f.area>0?`${f.area.toLocaleString()} ㎡`:'面積不明';
+    return `<div class="card" style="--uc:var(--orange);cursor:pointer" onclick="simSetBase(${f.id})">
+      <div class="ct">${f.name}</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:2px">${f.ward} / ${f.useDetail||f.use}</div>
+      <div style="margin-top:6px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <span style="font-size:12px;font-weight:700;color:var(--orange)">${ageStr}</span>
+        <span style="font-size:11px;color:var(--muted)">${areaStr}</span>
+      </div>
+      <button onclick="event.stopPropagation();simSetBase(${f.id})" style="margin-top:8px;padding:5px 14px;border:none;border-radius:6px;background:var(--blue);color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">核施設に設定</button>
+    </div>`;
+  }).join('');
+}
+
+function simSetBase(id){
+  simBase=FACILITIES.find(f=>f.id===id);
+  simSelected.clear();
+  simFacilityReduceOff.clear();
+  simCandMarkers={};
+  simStep=2;
+  document.getElementById('simStep1Controls').style.display='none';
+  document.getElementById('simStep2Controls').style.display='flex';
+  document.getElementById('simBaseName').textContent=simBase.name;
+
+  const ca=document.querySelector('.cards-area');
+  ca.style.display='flex'; ca.style.gap='0'; ca.style.padding='0'; ca.style.alignItems='stretch';
+
+  const simcg=document.getElementById('simcg');
+  simcg.className='';
+  simcg.style.cssText='width:380px;min-width:380px;flex-shrink:0;overflow-y:auto;max-height:calc(100vh - 180px);background:var(--white);border-right:1.5px solid var(--line)';
+
+  const mapWrap=document.getElementById('mapWrap');
+  mapWrap.classList.remove('hidden');
+  mapWrap.style.flex='1';
+  mapWrap.style.height='calc(100vh - 180px)';
+
+  renderSimStep2();
+}
+
+function simReset(){
+  simBase=null; simSelected.clear(); simFacilityReduceOff.clear(); simCandMarkers={}; simStep=1;
+  document.getElementById('simStep1Controls').style.display='flex';
+  document.getElementById('simStep2Controls').style.display='none';
+
+  const ca=document.querySelector('.cards-area');
+  ca.style.display=''; ca.style.gap=''; ca.style.padding=''; ca.style.alignItems='';
+  const simcg=document.getElementById('simcg');
+  simcg.className='cards-grid';
+  simcg.style.cssText='';
+  const mapWrap=document.getElementById('mapWrap');
+  mapWrap.classList.add('hidden');
+  mapWrap.style.flex=''; mapWrap.style.height='';
+
+  if(simMarkerLayer) simMarkerLayer.clearLayers();
+  if(simCircleLayer){if(leafletMap)leafletMap.removeLayer(simCircleLayer);simCircleLayer=null;}
+
+  document.getElementById('dp').classList.remove('open');
+  renderSimStep1();
+}
+
+function renderSimStep2(){
+  const candidates=getSimCandidates();
+  document.getElementById('simCandCount').textContent=candidates.length;
+  const sameWardCount=candidates.filter(f=>f._sameWard).length;
+  document.getElementById('simCandSameWard').textContent=sameWardCount;
+
+  const simcg=document.getElementById('simcg');
+  simcg.innerHTML=`
+    <div style="padding:10px 14px;background:var(--bg);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:10">
+      <div style="font-size:12px;font-weight:700;color:var(--blue)">Step 2 — 複合化候補（${candidates.length}件）</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:2px">チェックして複合化候補に追加</div>
+    </div>
+    <div style="padding:10px">
+      ${candidates.length?candidates.map(f=>simCandCard(f)).join(''):'<div style="padding:20px;text-align:center;color:var(--muted);font-size:13px">候補施設がありません</div>'}
+    </div>`;
+
+  renderSimSummary();
+  renderSimMap2(candidates);
+}
+
+function simCandCard(f){
+  const age=f.year?2026-f.year:null;
+  const areaStr=f.area>0?`${f.area.toLocaleString()} ㎡`:'面積不明';
+  const checked=simSelected.has(f.id)?'checked':'';
+  const sc=f._score||0;
+  const stars=sc>=6?'★★★':sc>=3?'★★':sc>=1?'★':'';
+  const isSel=simSelected.has(f.id);
+  const sameWard=f._sameWard;
+  const dist=simBase?haversineKm(simBase.lat,simBase.lng,f.lat,f.lng):null;
+  const distStr=dist!=null?(dist<1?`${Math.round(dist*1000)}m`:`${dist.toFixed(1)}km`):'';
+  const detailLines=[
+    f.address?`<tr><th>住所</th><td>${f.address}</td></tr>`:'',
+    f.year?`<tr><th>建築年</th><td>${f.year}年（築${age}年）</td></tr>`:'',
+    f.area>0?`<tr><th>延床面積</th><td>${f.area.toLocaleString()} ㎡</td></tr>`:'',
+    f.useDetail?`<tr><th>用途</th><td>${f.use} / ${f.useDetail}</td></tr>`:`<tr><th>用途</th><td>${f.use||'—'}</td></tr>`,
+    distStr?`<tr><th>核施設まで</th><td>${distStr}</td></tr>`:'',
+  ].filter(Boolean).join('');
+  return `<div id="simcard_${f.id}" class="card" style="margin-bottom:8px;--uc:${isSel?'var(--blue)':'var(--line)'};background:${isSel?'#f0f6ff':'var(--white)'}">
+    <div style="display:flex;align-items:flex-start;gap:8px;cursor:pointer" onclick="simToggleSelect(${f.id})">
+      <input type="checkbox" ${checked} onclick="event.stopPropagation()" onchange="simToggleSelect(${f.id})" style="margin-top:3px;width:16px;height:16px;accent-color:var(--blue);cursor:pointer;flex-shrink:0">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:700;color:var(--ink);margin-bottom:2px">${f.name}</div>
+        <div style="font-size:11px;color:var(--muted)">${f.ward}${sameWard?' <span style="color:var(--blue)">同区</span>':''} / ${f.useDetail||f.use}</div>
+        <div style="margin-top:4px;display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+          ${age?`<span style="font-size:11px;font-weight:700;color:${age>=50?'#c0392b':'var(--orange)'}">築${age}年</span>`:''}
+          <span style="font-size:11px;color:var(--muted)">${areaStr}</span>
+          ${distStr?`<span style="font-size:11px;color:var(--muted)">${distStr}</span>`:''}
+          ${stars?`<span style="font-size:11px;color:var(--orange)" title="親和性スコア">${stars}</span>`:''}
+        </div>
+      </div>
+    </div>
+    ${detailLines?`<details style="margin-top:6px;border-top:1px solid var(--line);padding-top:6px">
+      <summary style="font-size:11px;color:var(--muted);cursor:pointer;list-style:none;display:flex;align-items:center;gap:4px" onclick="event.stopPropagation()">▸ 施設詳細</summary>
+      <table style="width:100%;border-collapse:collapse;margin-top:4px;font-size:11px">
+        <colgroup><col style="width:80px"></colgroup>
+        ${detailLines}
+      </table>
+    </details>`:''}
+  </div>`;
+}
+
+function simToggleSelect(id){
+  const was=simSelected.has(id);
+  if(was) simSelected.delete(id); else simSelected.add(id);
+  const checked=!was;
+  const card=document.getElementById(`simcard_${id}`);
+  if(card){
+    card.style.background=checked?'#f0f6ff':'var(--white)';
+    card.style.setProperty('--uc',checked?'var(--blue)':'var(--line)');
+    const cb=card.querySelector('input[type=checkbox]');
+    if(cb) cb.checked=checked;
+  }
+  if(checked){
+    const f=FACILITIES.find(f=>f.id===id);
+    if(f&&f.lat&&f.lng&&leafletMap) leafletMap.panTo([f.lat,f.lng]);
+  }
+  renderSimSummary();
+  updateSimMapColors();
+}
+
+function renderSimSummary(){
+  const dp=document.getElementById('dp');
+  dp.classList.add('open');
+  document.getElementById('dpt').textContent='複合化シミュレーション';
+  document.getElementById('dpn').textContent='';
+  document.getElementById('dpa').textContent='';
+  document.getElementById('dpCityBadge').style.display='none';
+
+  const selFacs=[...simSelected].map(id=>FACILITIES.find(f=>f.id===id)).filter(Boolean);
+  const all=[simBase,...selFacs];
+  const totalRaw=all.reduce((s,f)=>s+(f.area>0?f.area:0),0);
+  const totalAdj=all.reduce((s,f)=>s+calcAdjustedArea(f),0);
+  const totalReduction=totalRaw-totalAdj;
+  const uses=[...new Set(all.map(f=>f.useDetail||f.use))];
+  const years=all.filter(f=>f.year).map(f=>f.year).sort((a,b)=>a-b);
+
+  function areaRow(f,isBase){
+    if(f.area<=0) return `<tr><td style="padding:3px 6px;font-size:11px;font-weight:${isBase?700:400}">${f.name}</td><td style="padding:3px 6px;font-size:11px;color:var(--muted);text-align:right">不明</td><td></td><td></td></tr>`;
+    const off=simFacilityReduceOff.has(f.id);
+    const adj=f.area*(off?1:0.95);
+    const reductionStr=!off?`<span style="color:#c0392b;font-size:10px">−${Math.round(f.area*0.05).toLocaleString()}</span>`:'';
+    return `<tr style="${isBase?'background:#fff3f3':''}">
+      <td style="padding:3px 6px;font-size:11px;font-weight:${isBase?700:400};max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${f.name}">${isBase?'🔴 ':''} ${f.name}</td>
+      <td style="padding:3px 6px;font-size:11px;text-align:right;white-space:nowrap">${f.area.toLocaleString()}</td>
+      <td style="padding:3px 6px;font-size:11px;text-align:center"><label style="cursor:pointer;white-space:nowrap"><input type="checkbox" ${!off?'checked':''} onchange="toggleFacilityReduction(${f.id},this.checked)" onclick="event.stopPropagation()" style="accent-color:var(--blue);vertical-align:middle"> ×0.95</label></td>
+      <td style="padding:3px 6px;font-size:11px;text-align:right;white-space:nowrap;font-weight:600">${Math.round(adj).toLocaleString()} ${reductionStr}</td>
+    </tr>`;
+  }
+
+  document.querySelector('.dpb').innerHTML=`<div style="padding:14px">
+    <div style="margin-bottom:14px">
+      <div style="font-size:11px;font-weight:700;letter-spacing:.08em;color:var(--muted);text-transform:uppercase;margin-bottom:6px">核施設</div>
+      <div style="padding:10px;background:#fff3f3;border:1.5px solid #fca5a5;border-radius:8px">
+        <div style="font-size:13px;font-weight:700">${simBase.name}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px">${simBase.ward} / ${simBase.useDetail||simBase.use}</div>
+        <div style="font-size:11px;color:var(--orange);margin-top:2px">${simBase.year?`築${2026-simBase.year}年（${simBase.year}年）`:'建築年不明'} / ${simBase.area>0?simBase.area.toLocaleString()+' ㎡':'面積不明'}</div>
+      </div>
+    </div>
+    <div style="margin-bottom:14px">
+      <div style="font-size:11px;font-weight:700;letter-spacing:.08em;color:var(--muted);text-transform:uppercase;margin-bottom:6px">シミュレーション集計</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+        <div style="padding:10px;background:var(--bg);border-radius:8px;text-align:center">
+          <div style="font-size:22px;font-weight:700;color:var(--blue)">${all.length}</div>
+          <div style="font-size:10px;color:var(--muted)">複合化施設数</div>
+        </div>
+        <div style="padding:10px;background:var(--bg);border-radius:8px;text-align:center">
+          <div style="font-size:18px;font-weight:700;color:var(--green)">${totalAdj>0?Math.round(totalAdj).toLocaleString():'—'}</div>
+          <div style="font-size:10px;color:var(--muted)">調整後延床面積㎡</div>
+        </div>
+      </div>
+      <div style="font-size:11px;color:var(--muted);padding:4px 8px;background:var(--bg);border-radius:6px;margin-bottom:10px">
+        共用部削減（×0.95）は施設ごとに設定できます
+        ${totalReduction>0?`<span style="color:#c0392b;font-weight:700;margin-left:8px">合計 −${Math.round(totalReduction).toLocaleString()} ㎡</span>`:''}
+      </div>
+      ${all.some(f=>f.area>0)?`<div style="margin-bottom:4px;font-size:11px;font-weight:700;color:var(--muted)">延床面積の内訳</div>
+      <div style="overflow-x:auto;border:1px solid var(--line);border-radius:6px">
+        <table style="width:100%;border-collapse:collapse;font-family:inherit">
+          <thead>
+            <tr style="background:var(--bg);border-bottom:1px solid var(--line)">
+              <th style="padding:4px 6px;font-size:10px;font-weight:700;color:var(--muted);text-align:left">施設名</th>
+              <th style="padding:4px 6px;font-size:10px;font-weight:700;color:var(--muted);text-align:right">現状㎡</th>
+              <th style="padding:4px 6px;font-size:10px;font-weight:700;color:var(--muted);text-align:center"></th>
+              <th style="padding:4px 6px;font-size:10px;font-weight:700;color:var(--muted);text-align:right">調整後㎡</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${all.map((f,i)=>areaRow(f,i===0)).join('')}
+          </tbody>
+          <tfoot>
+            <tr style="border-top:2px solid var(--line);background:var(--bg)">
+              <td style="padding:4px 6px;font-size:11px;font-weight:700">合計</td>
+              <td style="padding:4px 6px;font-size:11px;text-align:right">${Math.round(totalRaw).toLocaleString()}</td>
+              <td></td>
+              <td style="padding:4px 6px;font-size:11px;font-weight:700;text-align:right;color:var(--green)">${Math.round(totalAdj).toLocaleString()}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>`:''}
+    </div>
+    <div style="margin-bottom:14px">
+      <div style="font-size:11px;font-weight:700;letter-spacing:.08em;color:var(--muted);text-transform:uppercase;margin-bottom:6px">用途の組み合わせ</div>
+      <div style="display:flex;flex-wrap:wrap;gap:4px">${uses.map(u=>`<span style="font-size:11px;padding:3px 8px;background:var(--bg);border:1px solid var(--line);border-radius:12px">${u}</span>`).join('')}</div>
+    </div>
+    ${years.length?`<div style="margin-bottom:14px">
+      <div style="font-size:11px;font-weight:700;letter-spacing:.08em;color:var(--muted);text-transform:uppercase;margin-bottom:6px">建築年の分布</div>
+      <div style="font-size:12px">${years[0]}年〜${years[years.length-1]}年</div>
+      <div style="font-size:11px;color:var(--muted)">最古: 築${2026-years[0]}年 / 最新: 築${2026-years[years.length-1]}年</div>
+    </div>`:''}
+    ${selFacs.length?'':`<div style="font-size:12px;color:var(--muted);padding:10px 0;text-align:center">左から複合化する施設を選択してください</div>`}
+    <button onclick="simCopyUrl()" style="width:100%;padding:8px;border:none;border-radius:7px;background:var(--blue);color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:4px">🔗 このパターンをコピー</button>
+  </div>`;
+}
+
+function renderSimMap2(candidates){
+  initSimMap();
+  markerLayer.clearLayers();
+  simMarkerLayer.clearLayers();
+  simCandMarkers={};
+  if(simCircleLayer){leafletMap.removeLayer(simCircleLayer);simCircleLayer=null;}
+
+  simCircleLayer=L.circle([simBase.lat,simBase.lng],{radius:2000,color:'#3182ce',fillColor:'#3182ce',fillOpacity:0.05,weight:1.5,dashArray:'6 4'}).addTo(leafletMap);
+
+  L.marker([simBase.lat,simBase.lng],{
+    icon:L.divIcon({className:'',html:`<div style="width:18px;height:18px;border-radius:50%;background:#e53e3e;border:3px solid #fff;box-shadow:0 2px 8px rgba(229,62,62,.5)"></div>`,iconSize:[18,18],iconAnchor:[9,9]}),
+    zIndexOffset:1000
+  }).bindPopup(`<div style="font-family:'Hiragino Kaku Gothic ProN',sans-serif"><div style="font-size:11px;color:#e53e3e;font-weight:700">🔴 核施設</div><div style="font-size:13px;font-weight:700;margin-top:2px">${simBase.name}</div><div style="font-size:11px;color:#888;margin-top:2px">${simBase.ward} / ${simBase.year?`築${2026-simBase.year}年`:''}</div></div>`).addTo(simMarkerLayer);
+
+  candidates.forEach(f=>addSimCandMarker(f));
+
+  const lls=[[simBase.lat,simBase.lng],...candidates.filter(f=>f.lat&&f.lng).map(f=>[f.lat,f.lng])];
+  try{leafletMap.fitBounds(L.latLngBounds(lls),{padding:[40,40]});}catch(e){leafletMap.setView([simBase.lat,simBase.lng],13);}
+  leafletMap.invalidateSize();
+}
+
+function simMarkerHtml(sel,labelName){
+  const color=sel?'#3182ce':'#aaa';
+  const sz=sel?14:10;
+  const label=simLabelOn&&labelName?`<div style="position:absolute;left:${sz+3}px;top:50%;transform:translateY(-50%);white-space:nowrap;font-size:10px;font-weight:700;color:${sel?'#1a5fb5':'#555'};background:rgba(255,255,255,.85);border-radius:3px;padding:1px 4px;pointer-events:none;line-height:1.3">${labelName}</div>`:'';
+  return {html:`<div style="position:relative;display:inline-block"><div style="width:${sz}px;height:${sz}px;border-radius:50%;background:${color};border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.3)"></div>${label}</div>`,sz};
+}
+
+function addSimCandMarker(f){
+  const sel=simSelected.has(f.id);
+  const {html,sz}=simMarkerHtml(sel,f.name);
+  const icon=L.divIcon({className:'',html,iconSize:[sz,sz],iconAnchor:[sz/2,sz/2]});
+  const age=f.year?2026-f.year:null;
+  const m=L.marker([f.lat,f.lng],{icon})
+    .bindPopup(`<div style="font-family:'Hiragino Kaku Gothic ProN',sans-serif;min-width:180px">
+      <div style="font-size:13px;font-weight:700;margin-bottom:4px">${f.name}</div>
+      <div style="font-size:11px;color:#888">${f.ward} / ${f.useDetail||f.use}</div>
+      ${age?`<div style="font-size:11px;color:#d4670a;margin-top:2px">築${age}年</div>`:''}
+      <button onclick="simToggleSelect(${f.id});leafletMap.closePopup()" style="margin-top:8px;width:100%;padding:5px;border:none;border-radius:5px;background:#1a6fb5;color:#fff;font-size:12px;cursor:pointer;font-family:inherit">${sel?'✓ 選択解除':'+ 追加'}</button>
+    </div>`)
+    .addTo(simMarkerLayer);
+  simCandMarkers[f.id]=m;
+}
+
+function updateSimMapColors(){
+  Object.entries(simCandMarkers).forEach(([id,m])=>{
+    const f=FACILITIES.find(f=>f.id===parseInt(id));
+    if(!f||!f.lat||!f.lng) return;
+    const sel=simSelected.has(f.id);
+    const {html,sz}=simMarkerHtml(sel,f.name);
+    m.setIcon(L.divIcon({className:'',html,iconSize:[sz,sz],iconAnchor:[sz/2,sz/2]}));
+  });
+}
+
+function simCopyUrl(){
+  const p=new URLSearchParams();
+  p.set('tab','simulator');
+  if(simBase) p.set('base',simBase.id);
+  if(simSelected.size) p.set('sel',[...simSelected].join(','));
+  p.set('yago',simYearAgo);
+  const url=location.origin+location.pathname+'?'+p.toString();
+  navigator.clipboard.writeText(url).then(()=>{
+    const btn=document.querySelector('[onclick="simCopyUrl()"]');
+    if(btn){const t=btn.textContent;btn.textContent='✓ コピーしました！';setTimeout(()=>btn.textContent=t,1500);}
+  });
+}
+
 // ── 初期化フック ──
 document.addEventListener('DOMContentLoaded',()=>{
   updateFavBadge();
   loadStateFromUrl();
+  // simulator URL復元
+  const p=new URLSearchParams(location.search);
+  if(p.get('tab')==='simulator'){
+    if(p.get('yago')){
+      simYearAgo=parseInt(p.get('yago'));
+      const sl=document.getElementById('simYearSlider');
+      if(sl) sl.value=simYearAgo;
+      document.getElementById('simYearLabel').textContent=simYearAgo+'年以上）';
+    }
+    switchTab('simulator');
+    if(p.get('base')){
+      simSetBase(parseInt(p.get('base')));
+      if(p.get('sel')) p.get('sel').split(',').map(Number).forEach(id=>simSelected.add(id));
+      renderSimStep2();
+    }
+  }
 });
 
 </script>
