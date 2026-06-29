@@ -1702,10 +1702,6 @@ function loadStateFromUrl(){
     const tmpId='__shared__';
     lists[tmpId]={name:'共有リスト',items:ids};
     state.listFilter=tmpId;
-    setTimeout(()=>{
-      const sel=document.getElementById('listFilterSel');
-      if(sel){rebuildListFilterSelect();sel.value=tmpId;}
-    },0);
   }
   if(state.wards.size||state.uses.size||state.useDetails.size||state.bureaus.size){
     buildWsItems([...new Set(FACILITIES.map(f=>f.ward))].sort((a,b)=>a.localeCompare(b,'ja')));
@@ -1871,7 +1867,7 @@ function saveLists(){localStorage.setItem('facilityLists',JSON.stringify(lists))
 function rebuildListFilterSelect(){
   const sel=document.getElementById('listFilterSel');
   if(!sel)return;
-  const cur=sel.value;
+  const cur=state.listFilter||sel.value;
   sel.innerHTML='<option value="">すべて</option>'+Object.entries(lists).map(([id,l])=>`<option value="${id}">${l.name}（${l.items.length}件）</option>`).join('');
   if(lists[cur]) sel.value=cur;
 }
@@ -2002,9 +1998,8 @@ function showAddToListMenu(fid, btn){
 // ── 初期化フック ──
 document.addEventListener('DOMContentLoaded',()=>{
   loadLists();
-  rebuildListFilterSelect();
   loadStateFromUrl();
-  loadLists();
+  rebuildListFilterSelect();
   checkUpdateBadge();
 });
 
