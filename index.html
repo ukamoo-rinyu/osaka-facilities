@@ -1875,10 +1875,11 @@ function createList(){
   document.getElementById('newListName').value='';
   renderListPanel();
 }
-function deleteList(){
-  if(!activeListId||!confirm('リスト「'+lists[activeListId]?.name+'」を削除しますか？'))return;
-  delete lists[activeListId];
-  activeListId=null;
+function deleteList(id){
+  const target=id||activeListId;
+  if(!target||!confirm('リスト「'+lists[target]?.name+'」を削除しますか？'))return;
+  delete lists[target];
+  if(activeListId===target) activeListId=null;
   saveLists();
   renderListPanel();
 }
@@ -1894,30 +1895,49 @@ function removeFromList(facilityId){
   saveLists();
   renderListPanel();
 }
+function toggleListOpen(id){
+  activeListId = (activeListId===id) ? null : id;
+  renderListPanel();
+}
 function renderListPanel(){
   const namesEl=document.getElementById('listNames');
-  namesEl.innerHTML=Object.entries(lists).map(([id,l])=>`
-    <div class="lp-list ${id===activeListId?'active':''}" onclick="activeListId='${id}';renderListPanel()">
-      <span style="font-weight:700">${l.name}</span>
-      <span style="font-size:11px;color:var(--muted)">${l.items.length}件</span>
-    </div>`).join('');
-  const itemsEl=document.getElementById('listItems');
-  const actEl=document.getElementById('listActions');
-  if(activeListId&&lists[activeListId]){
-    const facs=lists[activeListId].items.map(id=>FACILITIES.find(f=>f.id===id)).filter(Boolean);
-    itemsEl.innerHTML=facs.length?facs.map(f=>`
-      <div style="padding:8px 12px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px">
-        <div style="flex:1">
-          <div style="font-weight:700;font-size:13px">${f.name}</div>
-          <div style="font-size:11px;color:var(--muted)">${f.ward} · ${f.useDetail||f.use}</div>
-        </div>
-        <button onclick="removeFromList(${f.id})" style="background:none;border:1px solid var(--line);border-radius:4px;padding:2px 6px;font-size:11px;cursor:pointer;color:var(--muted)">✕</button>
-      </div>`).join(''):'<div style="padding:20px;text-align:center;color:var(--muted);font-size:12px">施設を追加してください</div>';
-    actEl.style.display='flex';
-  } else {
-    itemsEl.innerHTML='<div style="padding:20px;text-align:center;color:var(--muted);font-size:12px">左からリストを選択してください</div>';
-    actEl.style.display='none';
+  const entries=Object.entries(lists);
+  if(!entries.length){
+    namesEl.innerHTML='<div style="padding:20px;text-align:center;color:var(--muted);font-size:12px">まだリストがありません</div>';
+    rebuildListFilterSelect();
+    return;
   }
+  namesEl.innerHTML=entries.map(([id,l])=>{
+    const open=id===activeListId;
+    const facs=open?l.items.map(fid=>FACILITIES.find(f=>f.id===fid)).filter(Boolean):[];
+    const itemsHtml=open?`
+      <div style="background:var(--bg);border-top:1px solid var(--line)">
+        ${facs.length?facs.map(f=>`
+          <div style="padding:8px 12px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px;background:#fff">
+            <div style="flex:1;cursor:pointer" onclick="selF(${f.id})">
+              <div style="font-weight:700;font-size:13px">${f.name}</div>
+              <div style="font-size:11px;color:var(--muted)">${f.ward} · ${f.useDetail||f.use}</div>
+            </div>
+            <button onclick="removeFromList(${f.id})" style="background:none;border:1px solid var(--line);border-radius:4px;padding:2px 6px;font-size:11px;cursor:pointer;color:var(--muted);flex-shrink:0">✕</button>
+          </div>`).join(''):'<div style="padding:16px;text-align:center;color:var(--muted);font-size:12px">施設を追加してください</div>'}
+        <div style="padding:8px 10px;display:flex;gap:6px;border-top:1px solid var(--line)">
+          <button onclick="exportListCsv()" style="flex:1;padding:6px;background:var(--green);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">⬇ CSV出力</button>
+          <button onclick="deleteList('${id}')" style="padding:6px 10px;background:var(--red);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">削除</button>
+        </div>
+      </div>`:''
+    ;
+    return `
+      <div>
+        <div class="lp-list${open?' active':''}" onclick="toggleListOpen('${id}')">
+          <span style="font-weight:700">${l.name}</span>
+          <span style="display:flex;align-items:center;gap:6px">
+            <span style="font-size:11px;color:var(--muted)">${l.items.length}件</span>
+            <span style="font-size:10px;color:var(--muted)">${open?'▲':'▼'}</span>
+          </span>
+        </div>
+        ${itemsHtml}
+      </div>`;
+  }).join('');
   rebuildListFilterSelect();
 }
 function exportListCsv(){
@@ -1980,12 +2000,7 @@ document.addEventListener('DOMContentLoaded',()=>{
     <input id="newListName" type="text" placeholder="新しいリスト名" style="flex:1;padding:6px 9px;border:1.5px solid var(--line);border-radius:7px;font-size:13px;font-family:inherit;outline:none">
     <button onclick="createList()" style="padding:6px 12px;background:var(--blue);color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">作成</button>
   </div>
-  <div id="listNames" style="border-bottom:1px solid var(--line)"></div>
-  <div id="listItems" style="padding:8px 0"></div>
-  <div id="listActions" style="display:none;padding:10px 12px;border-top:1px solid var(--line);display:flex;gap:6px">
-    <button onclick="exportListCsv()" style="flex:1;padding:7px;background:var(--green);color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">⬇ CSV出力</button>
-    <button onclick="deleteList()" style="padding:7px 12px;background:var(--red);color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">削除</button>
-  </div>
+  <div id="listNames"></div>
 </div>
 </body>
 </html>
