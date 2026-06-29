@@ -1664,6 +1664,10 @@ function copyShareUrl(){
   if(state.karte) p.set('karte',state.karte);
   if(state.rental) p.set('rental',state.rental);
   if(state.sort!=='name') p.set('sort',state.sort);
+  if(state.listFilter&&lists[state.listFilter]){
+    const ids=lists[state.listFilter].items;
+    if(ids.length) p.set('listids',ids.join(','));
+  }
   if(state.view==='map') p.set('view','map');
   if(circleActive&&circleLat!=null){
     p.set('clat',circleLat.toFixed(6));
@@ -1693,6 +1697,16 @@ function loadStateFromUrl(){
   if(p.get('karte')){state.karte=p.get('karte');document.getElementById('ks').value=state.karte;}
   if(p.get('rental')){state.rental=p.get('rental');document.getElementById('rs').value=state.rental;}
   if(p.get('sort')){state.sort=p.get('sort');}
+  if(p.get('listids')){
+    const ids=p.get('listids').split(',').map(Number).filter(Boolean);
+    const tmpId='__shared__';
+    lists[tmpId]={name:'共有リスト',items:ids};
+    state.listFilter=tmpId;
+    setTimeout(()=>{
+      const sel=document.getElementById('listFilterSel');
+      if(sel){rebuildListFilterSelect();sel.value=tmpId;}
+    },0);
+  }
   if(state.wards.size||state.uses.size||state.useDetails.size||state.bureaus.size){
     buildWsItems([...new Set(FACILITIES.map(f=>f.ward))].sort((a,b)=>a.localeCompare(b,'ja')));
     const uCnt={};FACILITIES.forEach(f=>{uCnt[f.use]=(uCnt[f.use]||0)+1;});
@@ -1862,7 +1876,18 @@ function rebuildListFilterSelect(){
   if(lists[cur]) sel.value=cur;
 }
 function onListFilterChange(val){
-  state.listFilter=val;
+  if(val){
+    // リスト選択時は他フィルターをすべてリセット
+    state={...state,q:'',wards:new Set(),uses:new Set(),useDetails:new Set(),bureaus:new Set(),karte:'',rental:'',listFilter:val};
+    document.getElementById('qi').value='';
+    document.getElementById('ks').value='';
+    document.getElementById('rs').value='';
+    updateWsBtn();updateUsBtn();updateBsBtn();
+    const udCount={};FACILITIES.forEach(f=>{udCount[f.useDetail]=(udCount[f.useDetail]||0)+1;});
+    buildUdsItems([...new Set(FACILITIES.map(f=>f.useDetail))].sort((a,b)=>udCount[b]-udCount[a]));
+  } else {
+    state.listFilter='';
+  }
   render();
 }
 function createList(){
