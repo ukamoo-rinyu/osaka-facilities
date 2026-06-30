@@ -116,6 +116,7 @@ function setView(btn, v){
   if(v==='map'){
     initMap();
     renderMap(getFiltered());
+    setTimeout(()=>{ if(leafletMap) leafletMap.invalidateSize(); }, 250);
   } else {
     render();
   }
@@ -832,7 +833,6 @@ function openP(f){
     ${karteUrl(f)?`<a class="dpl" href="${karteUrl(f)}" target="_blank" rel="noopener" style="color:var(--purple);border-color:var(--purple)">📋 資産カルテ（${f.kartePage}ページ）</a>`:''}
     <a class="dpl bm" href="${webUrl}" target="_blank" rel="noopener">${webLabel}</a>
     <a class="dpl bm" href="https://maps.google.com/maps?q=${a}" target="_blank" rel="noopener">🗺 Googleマップ</a>
-    <a class="dpl" style="color:var(--mid);border-color:var(--line)" href="https://www.google.com/search?q=${n}+${a}" target="_blank" rel="noopener">🔎 Google検索</a>
     ${f.lat&&f.lng?`<a class="dpl" style="color:var(--teal);border-color:var(--teal)" href="https://www.mapnavi.city.osaka.lg.jp/osakacity/Map?mid=51&ShowFidOnly=1&mps=10000&mtp=dm28&mpx=${f.lng}&mpy=${f.lat}&gprj=3" target="_blank" rel="noopener">🏗 用途地域・容積率</a>`:''}
     ${f.lat&&f.lng?`<a class="dpl" style="color:var(--teal);border-color:var(--teal)" href="https://www.mapnavi.city.osaka.lg.jp/osakacity/Map?mid=53&ShowFidOnly=1&mps=10000&mtp=dm28&mpx=${f.lng}&mpy=${f.lat}&gprj=3" target="_blank" rel="noopener">🏘 その他地域地区</a>`:''}
   `;
@@ -902,11 +902,6 @@ function openP(f){
     }
   }else{nearSec.style.display='none';}
 
-  document.getElementById('qls').innerHTML=`
-    <a class="ql" href="https://www.google.com/search?q=${encodeURIComponent(f.addr+'　施設　テナント')}" target="_blank" rel="noopener">🔍 同住所の施設</a>
-    <a class="ql" href="https://www.google.com/search?q=${encodeURIComponent(f.name+'　活用　跡地')}" target="_blank" rel="noopener">🏛 活用・跡地情報</a>
-    <a class="ql" href="https://www.google.com/search?q=${encodeURIComponent(f.addr+'　周辺　公共施設')}" target="_blank" rel="noopener">📍 周辺の公共施設</a>
-  `;
 }
 function closeP(){
   document.getElementById('dp').classList.remove('open');
